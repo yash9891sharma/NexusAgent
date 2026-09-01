@@ -12,9 +12,9 @@ from src.graders import structured_doc_grader
 
 load_dotenv()
 
-# Active Groq LLM
+# Active Groq LLM (Universal 100% active model)
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="llama-3.1-8b-instant",
     temperature=0.2,
     api_key=os.getenv("GROQ_API_KEY")
 )
@@ -51,7 +51,7 @@ def build_retriever(pdf_path: str = None):
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
     return retriever
 
-# Initial Retriever Build
+# Initial Build
 build_retriever()
 
 # --- Graph Nodes ---
@@ -84,7 +84,7 @@ def grade_documents(state: GraphState):
                 if "yes" in score:
                     filtered_docs.append(doc)
             except Exception as e:
-                print(f"--- [WARNING] Grader issue, falling back: {e} ---")
+                print(f"--- [WARNING] Grader fallback: {e} ---")
                 if any(w in doc.page_content.lower() for w in question.lower().split() if len(w) > 3):
                     filtered_docs.append(doc)
 
@@ -98,7 +98,7 @@ def transform_query(state: GraphState):
     question = state["question"]
     try:
         better_query = llm.invoke(
-            f"Convert this question into a concise 3-4 word Google search query: {question}. Output ONLY the search keywords without quotes."
+            f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY the search keywords without quotes."
         ).content.strip().replace('"', '')
     except Exception:
         better_query = question
@@ -110,7 +110,7 @@ def fallback_search(state: GraphState):
     tavily_key = os.getenv("TAVILY_API_KEY")
     web_doc = []
     
-    if tavily_key:
+    if tavily_key and "tvly-" in tavily_key:
         try:
             client = TavilyClient(api_key=tavily_key)
             search_results = client.search(query=query, max_results=3)
@@ -144,9 +144,14 @@ Instructions:
 2. If context is empty or the question is general knowledge / current affairs, answer directly, accurately, and politely using your foundational intelligence.
 3. Keep the answer direct, crisp, and helpful."""
 
-    response = llm.invoke(prompt)
+    try:
+        response = llm.invoke(prompt)
+        gen_text = response.content
+    except Exception as e:
+        gen_text = f"An error occurred while generating response: {e}"
+
     return {
-        "generation": response.content,
+        "generation": gen_text,
         "documents": documents,
         "question": question,
         "retry_count": current_retry
