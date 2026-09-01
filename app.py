@@ -72,14 +72,17 @@ if "messages" not in st.session_state:
 
 # --- Sidebar Controls ---
 with st.sidebar:
-    st.image("logo.png", width=120)      
-    st.markdown("### ⚙️ Engine Settings")
-    st.markdown('<span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span>', unsafe_allow_html=True)
+    # Top Logo + Sharp Title
+    st.markdown("""
+        <div style="text-align: center; margin-bottom: 15px;">
+            <img src="https://raw.githubusercontent.com/yash9891sharma/NexusAgent/main/logo.png" 
+                 style="width: 90px; height: 90px; object-fit: cover; border-radius: 16px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);">
+            <h2 style="color: #f8fafc; font-size: 1.3rem; margin-top: 10px; margin-bottom: 2px; font-weight: 700;">NEXUS AGENT</h2>
+            <p style="color: #64748b; font-size: 0.8rem; margin: 0;">Autonomous RAG Pipeline</p>
+        </div>
+    """, unsafe_allow_html=True)
     
-    st.divider()
-    st.markdown("#### 📄 Knowledge Base")
-    st.markdown("### ⚙️ Engine Settings")
-    st.markdown('<span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span>', unsafe_allow_html=True)
+    st.markdown('<div style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;"><span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span></div>', unsafe_allow_html=True)
     
     st.divider()
     st.markdown("#### 📄 Knowledge Base")
