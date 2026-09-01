@@ -27,17 +27,20 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = None
 retriever = None
 
-def build_retriever(pdf_path: str = "data/sample.pdf"):
+def build_retriever(pdf_path: str = None):
     global vectorstore, retriever
     docs_to_index = []
     
-    if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
+    target_path = pdf_path if pdf_path else "data/sample.pdf"
+    
+    if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
         try:
-            loader = PyPDFLoader(pdf_path)
+            loader = PyPDFLoader(target_path)
             raw_docs = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
             split_docs = text_splitter.split_documents(raw_docs)
             docs_to_index = [d for d in split_docs if d.page_content.strip()]
+            print(f"--- [INFO] Indexed {len(docs_to_index)} chunks from {target_path} ---")
         except Exception as e:
             print(f"--- [WARNING] PDF read failed: {e} ---")
 

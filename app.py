@@ -1,10 +1,14 @@
 import os
 import time
 import streamlit as st
+
+# Streamlit secrets ko environment me load karein
 if hasattr(st, "secrets"):
     for key, value in st.secrets.items():
         os.environ[key] = str(value)
+
 from src.graph import nexus_app
+from src.nodes import build_retriever
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -17,14 +21,11 @@ st.set_page_config(
 # --- Gemini-Inspired Custom Styling ---
 st.markdown("""
 <style>
-    /* Global Styles */
     .stApp {
         background-color: #0d1117;
         color: #e6edf3;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    
-    /* Header Gradient */
     .hero-title {
         font-size: 2.2rem;
         font-weight: 700;
@@ -38,8 +39,6 @@ st.markdown("""
         font-size: 0.95rem;
         margin-bottom: 25px;
     }
-    
-    /* Chat Message Bubbles */
     .stChatMessage {
         background-color: #161b22;
         border: 1px solid #30363d;
@@ -47,8 +46,6 @@ st.markdown("""
         padding: 12px 18px;
         margin-bottom: 12px;
     }
-    
-    /* Status & Chips */
     .badge-chip {
         display: inline-block;
         padding: 4px 10px;
@@ -60,8 +57,6 @@ st.markdown("""
         border: 1px solid #30363d;
         margin-right: 6px;
     }
-    
-    /* Sidebar Customization */
     section[data-testid="stSidebar"] {
         background-color: #090d13;
         border-right: 1px solid #21262d;
@@ -75,7 +70,6 @@ if "messages" not in st.session_state:
 
 # --- Sidebar Controls ---
 with st.sidebar:
-    # Top Logo + Sharp Title
     st.markdown("""
         <div style="text-align: center; margin-bottom: 15px;">
             <img src="https://raw.githubusercontent.com/yash9891sharma/NexusAgent/main/logo.png" 
@@ -90,8 +84,23 @@ with st.sidebar:
     st.divider()
     st.markdown("#### 📄 Knowledge Base")
     uploaded_file = st.file_uploader("Upload reference documents (PDF)", type=["pdf"])
+    
+    # Dynamic PDF Ingestion Handler
     if uploaded_file:
-        st.success(f"Loaded: `{uploaded_file.name}`")
+        if "last_uploaded_file" not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
+            with st.spinner("⚡ Indexing document chunks into Vector DB..."):
+                os.makedirs("data", exist_ok=True)
+                temp_pdf_path = os.path.join("data", "uploaded_active.pdf")
+                with open(temp_pdf_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                # Re-index ChromaDB with uploaded document
+                build_retriever(temp_pdf_path)
+                st.session_state.last_uploaded_file = uploaded_file.name
+                st.session_state.messages = []
+                st.success(f"Indexed: `{uploaded_file.name}`")
+        else:
+            st.success(f"Active: `{uploaded_file.name}`")
         
     st.divider()
     if st.button("🗑️ Clear Conversation", use_container_width=True):
@@ -113,12 +122,10 @@ for message in st.session_state.messages:
 
 # User Input Handling
 if prompt := st.chat_input("Ask a question about your documents or any real-time topic..."):
-    # Display user query
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # Assistant Response Generation
     with st.chat_message("assistant", avatar="✨"):
         with st.status("🧠 Agent thinking...", expanded=True) as status:
             start_time = time.time()
@@ -126,7 +133,6 @@ if prompt := st.chat_input("Ask a question about your documents or any real-time
             st.write("🔍 Querying Vector Database...")
             inputs = {"question": prompt}
             
-            # Execute LangGraph Workflow
             state_history = []
             final_output = None
             for output in nexus_app.stream(inputs):
@@ -145,11 +151,9 @@ if prompt := st.chat_input("Ask a question about your documents or any real-time
             elapsed = time.time() - start_time
             status.update(label=f"Answer synthesized in {elapsed:.2f}s", state="complete", expanded=False)
 
-        # Fallback if no generation node captured
         answer_text = final_output if final_output else "Unable to generate a valid response."
         st.markdown(answer_text)
         
-        # Save to session history
         trace_summary = "\n".join(state_history)
         st.session_state.messages.append({
             "role": "assistant",
