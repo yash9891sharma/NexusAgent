@@ -1,6 +1,9 @@
 import os
 import time
 import streamlit as st
+if hasattr(st, "secrets"):
+    for key, value in st.secrets.items():
+        os.environ[key] = str(value)
 from src.graph import nexus_app
 
 # --- Page Configuration ---
