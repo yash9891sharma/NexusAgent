@@ -14,15 +14,15 @@ load_dotenv()
 
 # Active Groq LLM
 llm = ChatGroq(
-    model="qwen-2.5-32b",
+    model="llama-3.3-70b-versatile",
     temperature=0.2,
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-# Local Embeddings
+# Embeddings
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-# Vector Store State
+# Vector Store Manager
 vectorstore = None
 retriever = None
 
@@ -44,7 +44,7 @@ def build_retriever(pdf_path: str = None):
 
     if not docs_to_index:
         docs_to_index = [
-            Document(page_content="Yash Sharma is pursuing a Bachelor of Computer Application (BCA). He has skills in Python, AI, LangChain, and Web Development.")
+            Document(page_content="Nexus Agent is an autonomous RAG system built by Yash Sharma.")
         ]
 
     vectorstore = Chroma.from_documents(documents=docs_to_index, embedding=embeddings)
@@ -75,19 +75,19 @@ def grade_documents(state: GraphState):
 
     if documents:
         for doc in documents:
-            prompt = (
-                f"Question: {question}\n"
-                f"Context excerpt: {doc.page_content}\n\n"
-                f"Does this context directly contain the information needed to answer the question? Answer yes or no."
-            )
             try:
-                score = structured_doc_grader.invoke(prompt)
-                if hasattr(score, "binary_score") and score.binary_score.lower() == "yes":
+                res = structured_doc_grader.invoke({
+                    "document": doc.page_content,
+                    "question": question
+                })
+                score = res.content.strip().lower()
+                if "yes" in score:
                     filtered_docs.append(doc)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"--- [WARNING] Grader issue, falling back: {e} ---")
+                if any(w in doc.page_content.lower() for w in question.lower().split() if len(w) > 3):
+                    filtered_docs.append(doc)
 
-    # Agar document me answer nahi hai toh Web Search trigger karein
     web_search = "Yes" if len(filtered_docs) == 0 else "No"
     print(f"--- [DECISION] Relevant docs: {len(filtered_docs)} | Trigger Web Search: {web_search} ---")
 
@@ -96,9 +96,12 @@ def grade_documents(state: GraphState):
 def transform_query(state: GraphState):
     print("--- [NODE: TRANSFORM QUERY] Optimizing query for Web Search ---")
     question = state["question"]
-    better_query = llm.invoke(
-        f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY the search keywords without quotes."
-    ).content.strip().replace('"', '')
+    try:
+        better_query = llm.invoke(
+            f"Convert this question into a concise 3-4 word Google search query: {question}. Output ONLY the search keywords without quotes."
+        ).content.strip().replace('"', '')
+    except Exception:
+        better_query = question
     return {"question": better_query}
 
 def fallback_search(state: GraphState):
@@ -129,17 +132,17 @@ def generate(state: GraphState):
     documents = state.get("documents", [])
     context_text = "\n\n".join([d.page_content for d in documents if d.page_content.strip()])
     
-    prompt = f"""You are Nexus Agent, an intelligent AI assistant.
+    prompt = f"""You are Nexus Agent, an intelligent autonomous AI assistant.
 
 Context:
-{context_text if context_text else "No external context available."}
+{context_text if context_text else "No external document context found."}
 
 Question: {question}
 
 Instructions:
-1. If relevant document or web context is provided, base your answer strictly and factually on it.
-2. If context is missing or the question is a general fact/GK/current affairs question, answer directly, accurately, and politely using your foundational intelligence.
-3. Keep the answer direct and informative."""
+1. If relevant document or web context is provided, base your answer factually on it.
+2. If context is empty or the question is general knowledge / current affairs, answer directly, accurately, and politely using your foundational intelligence.
+3. Keep the answer direct, crisp, and helpful."""
 
     response = llm.invoke(prompt)
     return {

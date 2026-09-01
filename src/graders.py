@@ -2,7 +2,7 @@ import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 
-# Fast & stable grader model
+# Fast & stable active grader model on Groq
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
@@ -23,5 +23,5 @@ Respond with ONLY 'yes' or 'no'. Do not add any explanation or punctuation.""",
     input_variables=["document", "question"]
 )
 
-# Robust grading chain (Crash-proof without tool calling)
+# Crash-proof prompt-based grading chain
 structured_doc_grader = grader_prompt | llm

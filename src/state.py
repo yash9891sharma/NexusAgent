@@ -1,11 +1,10 @@
-from typing import List, TypedDict
+from typing import List
+from typing_extensions import TypedDict
+from langchain_core.documents import Document
 
 class GraphState(TypedDict):
-    """
-    Nexus Agent state schema
-    """
     question: str
     generation: str
     web_search: str
-    documents: List[str]
+    documents: List[Document]
     retry_count: int
