@@ -72,6 +72,12 @@ if "messages" not in st.session_state:
 
 # --- Sidebar Controls ---
 with st.sidebar:
+    st.image("logo.png", width=120)      
+    st.markdown("### ⚙️ Engine Settings")
+    st.markdown('<span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span>', unsafe_allow_html=True)
+    
+    st.divider()
+    st.markdown("#### 📄 Knowledge Base")
     st.markdown("### ⚙️ Engine Settings")
     st.markdown('<span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span>', unsafe_allow_html=True)
     
