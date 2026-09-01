@@ -12,15 +12,17 @@ from src.graders import structured_doc_grader
 
 load_dotenv()
 
-# Active Groq LLM & Embeddings
+# Active Groq LLM
 llm = ChatGroq(
-    model="qwen/qwen-2.5-32b",
+    model="qwen-2.5-32b",
     temperature=0.2,
     api_key=os.getenv("GROQ_API_KEY")
 )
+
+# Local Embeddings
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-# Vector Store Manager
+# Vector Store State
 vectorstore = None
 retriever = None
 
@@ -76,7 +78,7 @@ def grade_documents(state: GraphState):
             prompt = (
                 f"Question: {question}\n"
                 f"Context excerpt: {doc.page_content}\n\n"
-                f"Is this context directly relevant to answering the user's question? Answer yes or no."
+                f"Does this context directly contain the information needed to answer the question? Answer yes or no."
             )
             try:
                 score = structured_doc_grader.invoke(prompt)
@@ -85,7 +87,7 @@ def grade_documents(state: GraphState):
             except Exception:
                 pass
 
-    # Agar documents me answer nahi hai -> trigger web search
+    # Agar document me answer nahi hai toh Web Search trigger karein
     web_search = "Yes" if len(filtered_docs) == 0 else "No"
     print(f"--- [DECISION] Relevant docs: {len(filtered_docs)} | Trigger Web Search: {web_search} ---")
 
@@ -95,7 +97,7 @@ def transform_query(state: GraphState):
     print("--- [NODE: TRANSFORM QUERY] Optimizing query for Web Search ---")
     question = state["question"]
     better_query = llm.invoke(
-        f"Convert this question into an effective, concise web search query (3-5 words). Output ONLY the search terms: {question}"
+        f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY the search keywords without quotes."
     ).content.strip().replace('"', '')
     return {"question": better_query}
 
@@ -121,23 +123,23 @@ def fallback_search(state: GraphState):
 
 def generate(state: GraphState):
     current_retry = state.get("retry_count", 0) + 1
-    print(f"--- [NODE: GENERATE] Generating response (Attempt {current_retry}) ---")
+    print(f"--- [NODE: GENERATE] Generating synthesized response ---")
     
     question = state["question"]
     documents = state.get("documents", [])
-    context_text = "\n\n".join([d.page_content for d in documents])
+    context_text = "\n\n".join([d.page_content for d in documents if d.page_content.strip()])
     
-    prompt = f"""You are Nexus Agent, an intelligent autonomous assistant.
+    prompt = f"""You are Nexus Agent, an intelligent AI assistant.
 
-Context provided:
-{context_text if context_text.strip() else "No external context available."}
+Context:
+{context_text if context_text else "No external context available."}
 
-User Question: {question}
+Question: {question}
 
-Guidelines:
-1. If relevant document or web context is present above, base your answer primarily on that context.
-2. If context is missing, empty, or about general knowledge / current affairs (e.g. world leaders, facts, programming), answer directly and accurately using your foundational knowledge.
-3. Give clear, direct, and concise answers."""
+Instructions:
+1. If relevant document or web context is provided, base your answer strictly and factually on it.
+2. If context is missing or the question is a general fact/GK/current affairs question, answer directly, accurately, and politely using your foundational intelligence.
+3. Keep the answer direct and informative."""
 
     response = llm.invoke(prompt)
     return {
