@@ -1,162 +1,103 @@
 import os
 import time
+import tempfile
 import streamlit as st
 
-# Streamlit secrets ko environment me load karein
-if hasattr(st, "secrets"):
-    for key, value in st.secrets.items():
-        os.environ[key] = str(value)
-
-from src.graph import nexus_app
-from src.nodes import build_retriever
-
-# --- Page Configuration ---
 st.set_page_config(
-    page_title="Nexus Agent | Autonomous RAG",
-    page_icon="✨",
+    page_title="Nexus Agent | Autonomous Self-Correcting RAG",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Gemini-Inspired Custom Styling ---
+# Auto-Sanitize Secrets
+for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
+    if key in st.secrets:
+        raw_val = str(st.secrets[key])
+        os.environ[key] = "".join(raw_val.split()).strip('"\'')
+
+from src.graph import nexus_app
+from src.nodes import build_retriever
+
+# Custom CSS
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #0d1117;
-        color: #e6edf3;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0px;
-    }
-    .hero-subtitle {
-        color: #8b949e;
-        font-size: 0.95rem;
-        margin-bottom: 25px;
-    }
-    .stChatMessage {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 12px 18px;
-        margin-bottom: 12px;
-    }
-    .badge-chip {
-        display: inline-block;
-        padding: 4px 10px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border-radius: 20px;
-        background-color: #21262d;
-        color: #58a6ff;
-        border: 1px solid #30363d;
-        margin-right: 6px;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: #090d13;
-        border-right: 1px solid #21262d;
-    }
+    .main { background-color: #0b0f19; }
+    .stChatMessage { border-radius: 12px; margin-bottom: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Session State Setup ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# --- Sidebar Controls ---
+# Sidebar
 with st.sidebar:
-    st.markdown("""
-        <div style="text-align: center; margin-bottom: 15px;">
-            <img src="https://raw.githubusercontent.com/yash9891sharma/NexusAgent/main/logo.png" 
-                 style="width: 90px; height: 90px; object-fit: cover; border-radius: 16px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);">
-            <h2 style="color: #f8fafc; font-size: 1.3rem; margin-top: 10px; margin-bottom: 2px; font-weight: 700;">NEXUS AGENT</h2>
-            <p style="color: #64748b; font-size: 0.8rem; margin: 0;">Autonomous RAG Pipeline</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.title("⚡ Nexus Agent")
+    st.caption("Autonomous RAG Pipeline")
     
-    st.markdown('<div style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;"><span class="badge-chip">Groq: Qwen-2.5-32B</span><span class="badge-chip">LangGraph</span></div>', unsafe_allow_html=True)
-    
-    st.divider()
-    st.markdown("#### 📄 Knowledge Base")
+    st.markdown("---")
+    st.subheader("📁 Document Knowledge Base")
     uploaded_file = st.file_uploader("Upload reference documents (PDF)", type=["pdf"])
     
-    # Dynamic PDF Ingestion Handler
-    if uploaded_file:
-        if "last_uploaded_file" not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
-            with st.spinner("⚡ Indexing document chunks into Vector DB..."):
-                os.makedirs("data", exist_ok=True)
-                temp_pdf_path = os.path.join("data", "uploaded_active.pdf")
-                with open(temp_pdf_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+    if uploaded_file is not None:
+        if "last_uploaded" not in st.session_state or st.session_state.last_uploaded != uploaded_file.name:
+            with st.spinner("Processing & indexing PDF..."):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                    tmp_file.write(uploaded_file.getvalue())
+                    tmp_path = tmp_file.name
                 
-                # Re-index ChromaDB with uploaded document
-                build_retriever(temp_pdf_path)
-                st.session_state.last_uploaded_file = uploaded_file.name
-                st.session_state.messages = []
-                st.success(f"Indexed: `{uploaded_file.name}`")
-        else:
-            st.success(f"Active: `{uploaded_file.name}`")
-        
-    st.divider()
-    if st.button("🗑️ Clear Conversation", use_container_width=True):
+                build_retriever(tmp_path)
+                st.session_state.last_uploaded = uploaded_file.name
+                st.success(f"✓ {uploaded_file.name} successfully indexed!")
+    
+    st.markdown("---")
+    if st.button("🗑 Clear Conversation", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- Main Interface ---
-st.markdown('<div class="hero-title">Nexus Agent</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-subtitle">Autonomous Self-Correcting RAG System with Real-Time Web Fallback</div>', unsafe_allow_html=True)
+# Main Header
+st.title("Nexus Agent")
+st.caption("Autonomous Self-Correcting RAG System with Real-Time Web Fallback")
 
-# Render Chat History
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display Chat History
 for message in st.session_state.messages:
-    avatar = "👤" if message["role"] == "user" else "✨"
-    with st.chat_message(message["role"], avatar=avatar):
+    with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        if "trace" in message and message["trace"]:
-            with st.expander("🔍 Agent Execution & Verification Trace", expanded=False):
-                st.caption(message["trace"])
 
-# User Input Handling
-if prompt := st.chat_input("Ask a question about your documents or any real-time topic..."):
+# User Input
+if prompt := st.chat_input("Ask a question about your documents or any general topic..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="👤"):
+    with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar="✨"):
-        with st.status("🧠 Agent thinking...", expanded=True) as status:
-            start_time = time.time()
-            
-            st.write("🔍 Querying Vector Database...")
-            inputs = {"question": prompt}
-            
+    with st.chat_message("assistant"):
+        status_placeholder = st.empty()
+        with status_placeholder.status("⚙️ Executing Autonomous Pipeline...", expanded=True) as status:
+            inputs = {"question": prompt, "retry_count": 0}
             state_history = []
             final_output = None
+
+            start_time = time.time()
             for output in nexus_app.stream(inputs):
                 for key, value in output.items():
-                    state_history.append(f"• Node **`{key}`** executed.")
+                    state_history.append(f"• Node **`{key}`** completed")
                     if key == "grade_documents":
-                        st.write("⚖️ Grading document relevance & hallucination check...")
+                        status.write(f"⚖️ Grading relevance (Trigger Web Search: `{value.get('web_search', 'No')}`)")
                     elif key == "transform_query":
-                        st.write("🔄 Reformulating query for internet search...")
+                        status.write("🔄 Query transformed for Web Search")
                     elif key == "web_search":
-                        st.write("🌐 Fetching external context via Tavily...")
+                        status.write("🌐 Live Web Search executed")
                     elif key == "generate":
-                        st.write("✨ Generating synthesized grounded answer...")
                         final_output = value.get("generation")
-            
-            elapsed = time.time() - start_time
-            status.update(label=f"Answer synthesized in {elapsed:.2f}s", state="complete", expanded=False)
+                        status.write("✨ Synthesizing final response...")
 
-        answer_text = final_output if final_output else "Unable to generate a valid response."
-        st.markdown(answer_text)
-        
-        trace_summary = "\n".join(state_history)
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": answer_text,
-            "trace": trace_summary
-        })
+            elapsed = round(time.time() - start_time, 2)
+            status.update(label=f"✓ Answer synthesized in {elapsed}s", state="complete", expanded=False)
+
+        if final_output:
+            st.markdown(final_output)
+            st.session_state.messages.append({"role": "assistant", "content": final_output})
+            
+            with st.expander("🔍 Agent Execution & Verification Trace"):
+                for step in state_history:
+                    st.markdown(step)

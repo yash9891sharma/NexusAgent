@@ -8,23 +8,23 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from src.state import GraphState
-from src.graders import structured_doc_grader
+from src.graders import grade_doc_relevance, get_clean_key
 
 load_dotenv()
 
-# Active Groq LLM (Universal 100% active model)
-llm = ChatGroq(
-    model="llama-3.1-8b-instant",
-    temperature=0.2,
-    api_key=os.getenv("GROQ_API_KEY")
-)
-
-# Embeddings
+# Universal Embeddings
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-# Vector Store Manager
 vectorstore = None
 retriever = None
+
+def get_llm():
+    api_key = get_clean_key("GROQ_API_KEY")
+    return ChatGroq(
+        model="llama-3.1-8b-instant",
+        temperature=0.2,
+        api_key=api_key
+    )
 
 def build_retriever(pdf_path: str = None):
     global vectorstore, retriever
@@ -44,17 +44,14 @@ def build_retriever(pdf_path: str = None):
 
     if not docs_to_index:
         docs_to_index = [
-            Document(page_content="Nexus Agent is an autonomous RAG system built by Yash Sharma.")
+            Document(page_content="Nexus Agent is an autonomous RAG system designed for fast document question answering and real-time web search fallback.")
         ]
 
     vectorstore = Chroma.from_documents(documents=docs_to_index, embedding=embeddings)
     retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
     return retriever
 
-# Initial Build
 build_retriever()
-
-# --- Graph Nodes ---
 
 def retrieve(state: GraphState):
     print("--- [NODE: RETRIEVE] Fetching relevant docs ---")
@@ -68,37 +65,26 @@ def retrieve(state: GraphState):
     }
 
 def grade_documents(state: GraphState):
-    print("--- [NODE: GRADE DOCS] Checking document relevance ---")
+    print("--- [NODE: GRADE DOCS] Checking relevance ---")
     question = state["question"]
     documents = state.get("documents", [])
     filtered_docs = []
 
-    if documents:
-        for doc in documents:
-            try:
-                res = structured_doc_grader.invoke({
-                    "document": doc.page_content,
-                    "question": question
-                })
-                score = res.content.strip().lower()
-                if "yes" in score:
-                    filtered_docs.append(doc)
-            except Exception as e:
-                print(f"--- [WARNING] Grader fallback: {e} ---")
-                if any(w in doc.page_content.lower() for w in question.lower().split() if len(w) > 3):
-                    filtered_docs.append(doc)
+    for doc in documents:
+        if grade_doc_relevance(doc.page_content, question):
+            filtered_docs.append(doc)
 
     web_search = "Yes" if len(filtered_docs) == 0 else "No"
     print(f"--- [DECISION] Relevant docs: {len(filtered_docs)} | Trigger Web Search: {web_search} ---")
-
     return {"documents": filtered_docs, "question": question, "web_search": web_search}
 
 def transform_query(state: GraphState):
-    print("--- [NODE: TRANSFORM QUERY] Optimizing query for Web Search ---")
+    print("--- [NODE: TRANSFORM QUERY] Optimizing query for search ---")
     question = state["question"]
     try:
+        llm = get_llm()
         better_query = llm.invoke(
-            f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY the search keywords without quotes."
+            f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY keywords without quotes."
         ).content.strip().replace('"', '')
     except Exception:
         better_query = question
@@ -107,10 +93,10 @@ def transform_query(state: GraphState):
 def fallback_search(state: GraphState):
     print("--- [NODE: TAVILY SEARCH] Searching the live web ---")
     query = state["question"]
-    tavily_key = os.getenv("TAVILY_API_KEY")
+    tavily_key = get_clean_key("TAVILY_API_KEY")
     web_doc = []
     
-    if tavily_key and "tvly-" in tavily_key:
+    if tavily_key and len(tavily_key) > 10:
         try:
             client = TavilyClient(api_key=tavily_key)
             search_results = client.search(query=query, max_results=3)
@@ -126,7 +112,7 @@ def fallback_search(state: GraphState):
 
 def generate(state: GraphState):
     current_retry = state.get("retry_count", 0) + 1
-    print(f"--- [NODE: GENERATE] Generating synthesized response ---")
+    print("--- [NODE: GENERATE] Generating synthesized response ---")
     
     question = state["question"]
     documents = state.get("documents", [])
@@ -145,6 +131,7 @@ Instructions:
 3. Keep the answer direct, crisp, and helpful."""
 
     try:
+        llm = get_llm()
         response = llm.invoke(prompt)
         gen_text = response.content
     except Exception as e:

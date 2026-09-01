@@ -10,4 +10,3 @@ chromadb
 sentence-transformers
 tavily-python
 python-dotenv
-pydantic
