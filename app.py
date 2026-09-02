@@ -2,12 +2,17 @@ import os
 import time
 import base64
 import tempfile
+from PIL import Image
 import streamlit as st
+
+# --- Tab Favicon Icon Setup ---
+# Agar logo.png hai toh wahi browser tab icon banega
+favicon = "logo.png" if os.path.exists("logo.png") else "💠"
 
 # --- Page Configuration ---
 st.set_page_config(
     page_title="Nexus AI | Autonomous Agent",
-    page_icon="⚡",
+    page_icon=favicon,
     layout="wide",
     initial_sidebar_state="expanded"
 )
