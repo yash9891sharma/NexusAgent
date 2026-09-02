@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 data/
 .chroma/
-.DS_Store
+.DS_Store.env
