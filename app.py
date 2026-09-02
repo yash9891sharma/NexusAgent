@@ -1,5 +1,6 @@
 import os
 import time
+import base64
 import tempfile
 import streamlit as st
 
@@ -11,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Auto-Sanitize Secrets (Prevents newline & trailing space bugs) ---
+# --- Auto-Clean API Keys ---
 for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
     if key in st.secrets:
         raw_val = str(st.secrets[key])
@@ -25,14 +26,14 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* Global Dark Radial Canvas */
+    /* Global Dark Canvas */
     .stApp {
         background: radial-gradient(circle at 15% 15%, #0d1322 0%, #05070d 100%) !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* Background HUD Grid Overlay */
+    /* Ambient Cyber Grid Overlay */
     .stApp::before {
         content: "";
         position: fixed;
@@ -44,31 +45,40 @@ st.markdown("""
         z-index: 0;
     }
 
-    /* Sidebar Alignment & Upward Shift */
+    /* Remove Streamlit default top blank padding from sidebar */
     section[data-testid="stSidebar"] {
         background-color: rgba(9, 14, 26, 0.95) !important;
         border-right: 1px solid rgba(0, 242, 254, 0.2) !important;
     }
+    
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0.8rem !important;
+    }
 
-    section[data-testid="stSidebar"] .block-container,
     [data-testid="stSidebarContent"] {
-        padding-top: 1rem !important;
+        padding-top: 0.8rem !important;
     }
 
-    /* Perfectly Centered Sidebar Logo */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+    /* Pure Centered Logo Wrapper */
+    .sidebar-logo-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-top: 0px;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+
+    .sidebar-logo-box img {
+        width: 165px !important;
+        height: auto !important;
+        display: block;
         margin: 0 auto !important;
     }
 
-    [data-testid="stSidebar"] [data-testid="stImage"] > img {
-        margin: 0 auto !important;
-        display: block !important;
-    }
-
-    /* Centered Badge Row */
+    /* Centered Badges */
     .badge-container {
         display: flex;
         justify-content: center;
@@ -106,7 +116,7 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.08) !important;
     }
 
-    /* High-Tech Terminal Input Bar */
+    /* Terminal Input Bar */
     div[data-testid="stChatInput"] input {
         background: rgba(15, 23, 42, 0.9) !important;
         border: 1px solid rgba(0, 242, 254, 0.3) !important;
@@ -121,12 +131,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Function to encode local SVG/PNG to Base64 (guarantees centered display)
+def get_logo_html():
+    file_path = "logo.svg" if os.path.exists("logo.svg") else ("logo.png" if os.path.exists("logo.png") else None)
+    if not file_path:
+        return ""
+    mime = "image/svg+xml" if file_path.endswith(".svg") else "image/png"
+    with open(file_path, "rb") as f:
+        data = base64.b64encode(f.read()).decode("utf-8")
+    return f'''
+        <div class="sidebar-logo-box">
+            <img src="data:{mime};base64,{data}" alt="Nexus Logo">
+        </div>
+    '''
+
 # --- Sidebar Deck ---
 with st.sidebar:
-    if os.path.exists("logo.svg"):
-        st.image("logo.svg", width=160)
-    elif os.path.exists("logo.png"):
-        st.image("logo.png", width=160)
+    st.markdown(get_logo_html(), unsafe_allow_html=True)
 
     st.markdown("""
         <div class="badge-container">
