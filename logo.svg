@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 320" width="100%" height="100%">
+  <defs>
+    <!-- Cyber Neon Gradient (Cyan -> Electric Blue -> Violet -> Magenta) -->
+    <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="40%" stop-color="#3b82f6"/>
+      <stop offset="75%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+
+    <!-- Node Glow Filter -->
+    <filter id="glowFilt" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Central Core Flare -->
+    <radialGradient id="flare" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#00f5ff"/>
+      <stop offset="70%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- High-Tech Ambient Base Card -->
+  <rect width="260" height="320" rx="36" fill="#060913"/>
+  <rect x="2" y="2" width="256" height="316" rx="34" fill="none" stroke="url(#cyberGrad)" stroke-width="1.5" opacity="0.35"/>
+
+  <!-- Core Ambient Light -->
+  <circle cx="130" cy="110" r="55" fill="url(#flare)" opacity="0.18"/>
+
+  <!-- 3D Geometric "N" Structure -->
+  <g opacity="0.85">
+    <!-- Left Pillar -->
+    <polygon points="76,68 100,54 100,166 76,152" fill="#00f5ff" opacity="0.35"/>
+    <line x1="76" y1="68" x2="76" y2="152" stroke="#00f5ff" stroke-width="2"/>
+    <line x1="100" y1="54" x2="100" y2="166" stroke="#3b82f6" stroke-width="2"/>
+
+    <!-- Diagonal Beam -->
+    <polygon points="100,54 160,152 160,166 100,68" fill="url(#cyberGrad)" opacity="0.55"/>
+    <line x1="100" y1="54" x2="160" y2="152" stroke="#a855f7" stroke-width="2"/>
+
+    <!-- Right Pillar -->
+    <polygon points="160,54 184,68 184,152 160,166" fill="#ec4899" opacity="0.35"/>
+    <line x1="160" y1="54" x2="160" y2="166" stroke="#a855f7" stroke-width="2"/>
+    <line x1="184" y1="68" x2="184" y2="152" stroke="#ec4899" stroke-width="2"/>
+  </g>
+
+  <!-- Hexagonal Lattice Network Wireframe -->
+  <g stroke="url(#cyberGrad)" stroke-width="1.4" opacity="0.75" fill="none">
+    <!-- Outer Hexagon -->
+    <polygon points="130,32 195,70 195,150 130,188 65,150 65,70"/>
+
+    <!-- Radial Spokes to Center -->
+    <line x1="130" y1="32" x2="130" y2="110"/>
+    <line x1="195" y1="70" x2="130" y2="110"/>
+    <line x1="195" y1="150" x2="130" y2="110"/>
+    <line x1="130" y1="188" x2="130" y2="110"/>
+    <line x1="65" y1="150" x2="130" y2="110"/>
+    <line x1="65" y1="70" x2="130" y2="110"/>
+
+    <!-- Internal Neural Interconnects -->
+    <line x1="130" y1="32" x2="195" y2="150" stroke-opacity="0.35"/>
+    <line x1="130" y1="32" x2="65" y2="150" stroke-opacity="0.35"/>
+    <line x1="130" y1="188" x2="195" y2="70" stroke-opacity="0.35"/>
+    <line x1="130" y1="188" x2="65" y2="70" stroke-opacity="0.35"/>
+    <line x1="65" y1="70" x2="195" y2="70" stroke-opacity="0.35"/>
+    <line x1="65" y1="150" x2="195" y2="150" stroke-opacity="0.35"/>
+  </g>
+
+  <!-- Glowing Outer Vertices (6 Nodes) -->
+  <circle cx="130" cy="32" r="7" fill="#00f5ff" filter="url(#glowFilt)"/>
+  <circle cx="195" cy="70" r="7" fill="#38bdf8" filter="url(#glowFilt)"/>
+  <circle cx="195" cy="150" r="7" fill="#a855f7" filter="url(#glowFilt)"/>
+  <circle cx="130" cy="188" r="7" fill="#ec4899" filter="url(#glowFilt)"/>
+  <circle cx="65" cy="150" r="7" fill="#a855f7" filter="url(#glowFilt)"/>
+  <circle cx="65" cy="70" r="7" fill="#00f5ff" filter="url(#glowFilt)"/>
+
+  <!-- Solid White Centers for Nodes -->
+  <circle cx="130" cy="32" r="2.5" fill="#ffffff"/>
+  <circle cx="195" cy="70" r="2.5" fill="#ffffff"/>
+  <circle cx="195" cy="150" r="2.5" fill="#ffffff"/>
+  <circle cx="130" cy="188" r="2.5" fill="#ffffff"/>
+  <circle cx="65" cy="150" r="2.5" fill="#ffffff"/>
+  <circle cx="65" cy="70" r="2.5" fill="#ffffff"/>
+
+  <!-- Center Plasma Core -->
+  <circle cx="130" cy="110" r="16" fill="url(#flare)" filter="url(#glowFilt)"/>
+  <circle cx="130" cy="110" r="5" fill="#ffffff"/>
+
+  <!-- Typography: NEXUS -->
+  <text x="130" y="240" 
+        text-anchor="middle" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" 
+        font-weight="900" 
+        font-size="30" 
+        fill="#ffffff" 
+        letter-spacing="5">NEXUS</text>
+
+  <!-- Typography: AGENT -->
+  <text x="134" y="272" 
+        text-anchor="middle" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" 
+        font-weight="600" 
+        font-size="15" 
+        fill="#00f5ff" 
+        letter-spacing="10">AGENT</text>
+</svg>

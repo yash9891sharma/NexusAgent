@@ -5,13 +5,13 @@ import streamlit as st
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Nexus AI | Smart RAG Agent",
+    page_title="Nexus AI | Autonomous Agent",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Auto-Clean API Keys ---
+# --- Auto-Clean API Keys (Sanitize any line-breaks or spaces) ---
 for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
     if key in st.secrets:
         raw_val = str(st.secrets[key])
@@ -20,18 +20,19 @@ for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
 from src.graph import nexus_app
 from src.nodes import build_retriever
 
-# --- High-Tech Modern Styling with Clean Labels ---
+# --- High-Tech Modern Cyberpunk Theme Styling ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
+    /* Main App Background */
     .stApp {
         background: radial-gradient(circle at 15% 15%, #0d1322 0%, #05070d 100%) !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* Subtle Grid Overlay */
+    /* Ambient Cyber Grid Overlay */
     .stApp::before {
         content: "";
         position: fixed;
@@ -43,22 +44,21 @@ st.markdown("""
         z-index: 0;
     }
 
-    /* Sidebar Styling */
+    /* Sidebar Background & Borders */
     section[data-testid="stSidebar"] {
         background-color: rgba(9, 14, 26, 0.95) !important;
         border-right: 1px solid rgba(0, 242, 254, 0.2) !important;
     }
 
-    .brand-title {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: 1.5px;
-        background: linear-gradient(90deg, #00f2fe, #4facfe);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    /* Custom Logo Display */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 15px;
     }
 
+    /* Feature Badge Tags */
     .badge-pill {
         display: inline-block;
         padding: 3px 9px;
@@ -68,14 +68,14 @@ st.markdown("""
         border: 1px solid #00f2fe;
         color: #00f2fe;
         background: rgba(0, 242, 254, 0.1);
-        margin-right: 5px;
+        margin-right: 6px;
     }
 
-    /* Chat Messages Glass Cards */
+    /* Glassmorphism Chat Bubbles */
     .stChatMessage {
         background: rgba(15, 23, 42, 0.75) !important;
         border: 1px solid rgba(0, 242, 254, 0.15) !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         backdrop-filter: blur(8px) !important;
         margin-bottom: 12px !important;
     }
@@ -89,56 +89,55 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.08) !important;
     }
 
+    /* Chat Input Bar */
     div[data-testid="stChatInput"] input {
         background: rgba(15, 23, 42, 0.9) !important;
         border: 1px solid rgba(0, 242, 254, 0.3) !important;
         border-radius: 8px !important;
         color: #00f2fe !important;
     }
+
+    div[data-testid="stChatInput"] input:focus {
+        border-color: #00f2fe !important;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.25) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Sidebar ---
+# --- Sidebar Deck ---
 with st.sidebar:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=180)
-        
-    st.markdown('<div class="brand-title">NEXUS AI</div>', unsafe_allow_html=True)
-    st.markdown("""
-        <div style="margin-top: 6px; margin-bottom: 15px;">
-            <span class="badge-pill">Autonomous RAG</span>
-            <span class="badge-pill">Llama-3.1</span>
-        </div>
-    """, unsafe_allow_html=True)
+    if os.path.exists("logo.svg"):
+        st.image("logo.svg", width=150)
+    elif os.path.exists("logo.png"):
+        st.image("logo.png", width=150)
 
-    st.markdown('<div class="brand-title">NEXUS AI</div>', unsafe_allow_html=True)
     st.markdown("""
-        <div style="margin-top: 6px; margin-bottom: 15px;">
+        <div style="margin-top: 4px; margin-bottom: 18px;">
             <span class="badge-pill">Autonomous RAG</span>
             <span class="badge-pill">Llama-3.1</span>
         </div>
     """, unsafe_allow_html=True)
 
     st.markdown("### 📁 Upload Documents")
-    uploaded_file = st.file_uploader("Upload PDF to chat with its content", type=["pdf"])
+    uploaded_file = st.file_uploader("Upload PDF to index into knowledge base", type=["pdf"])
     
     if uploaded_file is not None:
         if "last_uploaded" not in st.session_state or st.session_state.last_uploaded != uploaded_file.name:
-            with st.spinner("Reading & indexing document..."):
+            with st.spinner("Processing & indexing document..."):
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getvalue())
                     tmp_path = tmp_file.name
                 
                 build_retriever(tmp_path)
                 st.session_state.last_uploaded = uploaded_file.name
-                st.success(f"✓ Uploaded & Ready: {uploaded_file.name}")
+                st.success(f"✓ Ready: {uploaded_file.name}")
 
     st.markdown("---")
     st.markdown("### ⚙️ System Features")
-    st.markdown("• **AI Engine:** Groq Cloud Llama-3.1")
-    st.markdown("• **Document Search:** Local Chroma Vector Store")
-    st.markdown("• **Web Fallback:** Tavily Real-Time Search")
-    st.markdown("• **Pipeline:** LangGraph Self-Correcting Flow")
+    st.markdown("• **LLM Model:** Groq Llama-3.1-8B")
+    st.markdown("• **Embeddings:** MiniLM-L6-v2")
+    st.markdown("• **Vector DB:** ChromaDB Vector Store")
+    st.markdown("• **Web Search:** Tavily Fallback Engine")
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🗑 Clear Chat History", use_container_width=True):
@@ -148,8 +147,14 @@ with st.sidebar:
 # --- Main Dashboard Header ---
 col1, col2 = st.columns([0.78, 0.22])
 with col1:
-    st.markdown('<h1 class="brand-title" style="font-size: 34px;">Nexus Autonomous AI</h1>', unsafe_allow_html=True)
-    st.caption("Ask questions about your uploaded documents or any general/real-time topic.")
+    st.markdown("""
+        <h1 style="font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 800; 
+                   background: linear-gradient(90deg, #00f2fe, #4facfe); 
+                   -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0px;">
+            Nexus Autonomous AI
+        </h1>
+    """, unsafe_allow_html=True)
+    st.caption("Ask questions about your uploaded documents or any real-time topic.")
 with col2:
     st.markdown("""
         <div style="text-align: right; padding-top: 15px;">
@@ -162,12 +167,12 @@ st.markdown("---")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display Conversation History
+# Display Chat History
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat Input & Execution
+# User Query Processing
 if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -192,13 +197,13 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
                         state_history.append(f"• Step 2: Graded document relevance (Web Search = {is_web})")
                     elif key == "transform_query":
                         status.write("🔄 Re-phrasing query for online search...")
-                        state_history.append("• Step 3: Optimized question keywords for web")
+                        state_history.append("• Step 3: Optimized search keywords for web fallback")
                     elif key == "web_search":
                         status.write("🌐 Fetching real-time information from web...")
-                        state_history.append("• Step 4: Searched live internet via Tavily")
+                        state_history.append("• Step 4: Searched live internet via Tavily API")
                     elif key == "generate":
                         final_output = value.get("generation")
-                        status.write("✨ Writing synthesized final answer...")
+                        status.write("✨ Synthesizing final answer...")
                         state_history.append("• Step 5: Generated final response with Groq LLM")
 
             elapsed = round(time.time() - start_time, 2)
