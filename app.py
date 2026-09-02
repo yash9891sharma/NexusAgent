@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Auto-Clean API Keys (Sanitize any line-breaks or spaces) ---
+# --- Auto-Sanitize Secrets (Prevents newline & trailing space bugs) ---
 for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
     if key in st.secrets:
         raw_val = str(st.secrets[key])
@@ -25,14 +25,14 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* Main App Background */
+    /* Global Dark Radial Canvas */
     .stApp {
         background: radial-gradient(circle at 15% 15%, #0d1322 0%, #05070d 100%) !important;
         color: #e2e8f0 !important;
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* Ambient Cyber Grid Overlay */
+    /* Background HUD Grid Overlay */
     .stApp::before {
         content: "";
         position: fixed;
@@ -44,21 +44,39 @@ st.markdown("""
         z-index: 0;
     }
 
-    /* Sidebar Background & Borders */
+    /* Sidebar Alignment & Upward Shift */
     section[data-testid="stSidebar"] {
         background-color: rgba(9, 14, 26, 0.95) !important;
         border-right: 1px solid rgba(0, 242, 254, 0.2) !important;
     }
 
-    /* Custom Logo Display */
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 15px;
+    section[data-testid="stSidebar"] .block-container,
+    [data-testid="stSidebarContent"] {
+        padding-top: 1rem !important;
     }
 
-    /* Feature Badge Tags */
+    /* Perfectly Centered Sidebar Logo */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 0 auto !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stImage"] > img {
+        margin: 0 auto !important;
+        display: block !important;
+    }
+
+    /* Centered Badge Row */
+    .badge-container {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 6px;
+        margin-bottom: 18px;
+    }
+
     .badge-pill {
         display: inline-block;
         padding: 3px 9px;
@@ -68,10 +86,9 @@ st.markdown("""
         border: 1px solid #00f2fe;
         color: #00f2fe;
         background: rgba(0, 242, 254, 0.1);
-        margin-right: 6px;
     }
 
-    /* Glassmorphism Chat Bubbles */
+    /* Glassmorphism Chat Bubble Containers */
     .stChatMessage {
         background: rgba(15, 23, 42, 0.75) !important;
         border: 1px solid rgba(0, 242, 254, 0.15) !important;
@@ -89,7 +106,7 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.08) !important;
     }
 
-    /* Chat Input Bar */
+    /* High-Tech Terminal Input Bar */
     div[data-testid="stChatInput"] input {
         background: rgba(15, 23, 42, 0.9) !important;
         border: 1px solid rgba(0, 242, 254, 0.3) !important;
@@ -107,12 +124,12 @@ st.markdown("""
 # --- Sidebar Deck ---
 with st.sidebar:
     if os.path.exists("logo.svg"):
-        st.image("logo.svg", width=150)
+        st.image("logo.svg", width=160)
     elif os.path.exists("logo.png"):
-        st.image("logo.png", width=150)
+        st.image("logo.png", width=160)
 
     st.markdown("""
-        <div style="margin-top: 4px; margin-bottom: 18px;">
+        <div class="badge-container">
             <span class="badge-pill">Autonomous RAG</span>
             <span class="badge-pill">Llama-3.1</span>
         </div>
@@ -172,7 +189,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User Query Processing
+# User Query Execution Pipeline
 if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
