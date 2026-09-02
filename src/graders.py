@@ -17,8 +17,9 @@ def get_clean_key(name: str) -> str:
 def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
         api_key = get_clean_key("GROQ_API_KEY")
+        # Updated to universally accessible Groq model
         llm = ChatGroq(
-            model="llama-3.1-8b-instant",
+            model="llama-3-8b-8192",
             temperature=0,
             api_key=api_key
         )
