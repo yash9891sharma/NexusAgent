@@ -100,6 +100,17 @@ st.markdown("""
 
 # --- Sidebar ---
 with st.sidebar:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=180)
+        
+    st.markdown('<div class="brand-title">NEXUS AI</div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div style="margin-top: 6px; margin-bottom: 15px;">
+            <span class="badge-pill">Autonomous RAG</span>
+            <span class="badge-pill">Llama-3.1</span>
+        </div>
+    """, unsafe_allow_html=True)
+
     st.markdown('<div class="brand-title">NEXUS AI</div>', unsafe_allow_html=True)
     st.markdown("""
         <div style="margin-top: 6px; margin-bottom: 15px;">
