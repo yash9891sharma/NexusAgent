@@ -44,7 +44,7 @@ def build_retriever(pdf_path: str = None):
 
     if not docs_to_index:
         docs_to_index = [
-            Document(page_content="Nexus Agent is an autonomous RAG system designed for fast document question answering and real-time web search fallback.")
+            Document(page_content="Nexus Agent is an advanced autonomous self-correcting RAG system designed, engineered, and developed by Yash Sharma. It uses LangGraph, Groq, ChromaDB, and Tavily Search.")
         ]
 
     vectorstore = Chroma.from_documents(documents=docs_to_index, embedding=embeddings)
@@ -118,7 +118,7 @@ def generate(state: GraphState):
     documents = state.get("documents", [])
     context_text = "\n\n".join([d.page_content for d in documents if d.page_content.strip()])
     
-    prompt = f"""You are Nexus Agent, an intelligent autonomous AI assistant.
+    prompt = f"""You are Nexus Agent, an intelligent autonomous RAG system designed and engineered by Yash Sharma.
 
 Context:
 {context_text if context_text else "No external document context found."}
@@ -126,9 +126,10 @@ Context:
 Question: {question}
 
 Instructions:
-1. If relevant document or web context is provided, base your answer factually on it.
-2. If context is empty or the question is general knowledge / current affairs, answer directly, accurately, and politely using your foundational intelligence.
-3. Keep the answer direct, crisp, and helpful."""
+1. If asked about your creator, developer, or origin, state clearly that you were designed and built by Yash Sharma.
+2. If document or web context is provided, base your answer factually on it.
+3. If context is empty or the question is general knowledge, answer directly, accurately, and crisply using your foundational intelligence.
+4. Keep the answer professional, direct, and concise."""
 
     try:
         llm = get_llm()
