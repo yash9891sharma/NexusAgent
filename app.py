@@ -2,25 +2,30 @@ import os
 import time
 import base64
 import tempfile
+from PIL import Image
 import streamlit as st
 
-# --- Auto-Clean API Keys (Sanitize any line-breaks or spaces) ---
+# --- Auto-Clean API Keys ---
 for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
     if key in st.secrets:
         raw_val = str(st.secrets[key])
         os.environ[key] = "".join(raw_val.split()).strip('"\'')
 
-# --- Tab Favicon Icon Setup ---
-favicon = "logo.png" if os.path.exists("logo.png") else "⚡"
+# --- Robust Favicon Loader ---
+fav_icon = "⚡"
+if os.path.exists("logo.png"):
+    try:
+        fav_icon = Image.open("logo.png")
+    except Exception:
+        fav_icon = "⚡"
 
 # --- Page Configuration ---
 st.set_page_config(
     page_title="Nexus AI | Engineered by Yash Sharma",
-    page_icon=favicon,
+    page_icon=fav_icon,
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 from src.graph import nexus_app
 from src.nodes import build_retriever
 
