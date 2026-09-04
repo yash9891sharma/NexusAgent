@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 from src.state import GraphState
 from src.graders import grade_doc_relevance
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 TAVILY_API_KEY = "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"
 
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")

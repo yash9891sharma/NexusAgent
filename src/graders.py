@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 
 def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
-        api_key = "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"
+        api_key = "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"
         llm = ChatGroq(
             model="llama-3.3-70b-versatile",
             temperature=0,
