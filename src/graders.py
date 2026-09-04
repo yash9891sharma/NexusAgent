@@ -18,7 +18,7 @@ def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
         api_key = get_clean_key("GROQ_API_KEY")
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             temperature=0,
             api_key=api_key
         )
