@@ -1,5 +1,5 @@
-# src/nodes.py
 import os
+from dotenv import load_dotenv
 from tavily import TavilyClient
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import Chroma
@@ -8,10 +8,9 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from src.state import GraphState
-from src.graders import grade_doc_relevance
+from src.graders import grade_doc_relevance, get_clean_key
 
-GROQ_API_KEY = "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"
-TAVILY_API_KEY = "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"
+load_dotenv()
 
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
@@ -19,10 +18,11 @@ vectorstore = None
 retriever = None
 
 def get_llm():
+    api_key = get_clean_key("GROQ_API_KEY")
     return ChatGroq(
         model="llama-3.3-70b-versatile",
         temperature=0.2,
-        api_key=GROQ_API_KEY
+        api_key=api_key
     )
 
 def build_retriever(pdf_path: str = None):
@@ -86,11 +86,12 @@ def transform_query(state: GraphState):
 
 def fallback_search(state: GraphState):
     query = state["question"]
+    tavily_key = get_clean_key("TAVILY_API_KEY")
     web_doc = []
     
-    if TAVILY_API_KEY:
+    if tavily_key and len(tavily_key) > 10:
         try:
-            client = TavilyClient(api_key=TAVILY_API_KEY)
+            client = TavilyClient(api_key=tavily_key)
             search_results = client.search(query=query, max_results=3)
             web_context = "\n".join([res.get("content", "") for res in search_results.get("results", []) if res.get("content")])
             if web_context.strip():
