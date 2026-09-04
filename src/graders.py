@@ -17,9 +17,8 @@ def get_clean_key(name: str) -> str:
 def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
         api_key = get_clean_key("GROQ_API_KEY")
-        # Updated to universally accessible Groq model
         llm = ChatGroq(
-            model='llama-3-8b-8192',
+            model="llama-3.3-70b-versatile",
             temperature=0,
             api_key=api_key
         )
@@ -40,3 +39,4 @@ Does this document contain information directly relevant to the question? Reply 
     except Exception as e:
         print(f"--- [WARNING] Grader fallback: {e} ---")
         return any(w in document_text.lower() for w in question.lower().split() if len(w) > 3)
+        
