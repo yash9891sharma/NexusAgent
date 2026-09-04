@@ -1,5 +1,5 @@
+# src/nodes.py
 import os
-from dotenv import load_dotenv
 from tavily import TavilyClient
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import Chroma
@@ -8,22 +8,21 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from src.state import GraphState
-from src.graders import grade_doc_relevance, get_clean_key
+from src.graders import grade_doc_relevance
 
-load_dotenv()
+GROQ_API_KEY = "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"
+TAVILY_API_KEY = "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"
 
-# Universal Embeddings
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 vectorstore = None
 retriever = None
 
 def get_llm():
-    api_key = get_clean_key("GROQ_API_KEY")
     return ChatGroq(
         model="llama-3.3-70b-versatile",
         temperature=0.2,
-        api_key=api_key
+        api_key=GROQ_API_KEY
     )
 
 def build_retriever(pdf_path: str = None):
@@ -38,7 +37,6 @@ def build_retriever(pdf_path: str = None):
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=80)
             split_docs = text_splitter.split_documents(raw_docs)
             docs_to_index = [d for d in split_docs if d.page_content.strip()]
-            print(f"--- [INFO] Indexed {len(docs_to_index)} chunks from {target_path} ---")
         except Exception as e:
             print(f"--- [WARNING] PDF read failed: {e} ---")
 
@@ -54,7 +52,6 @@ def build_retriever(pdf_path: str = None):
 build_retriever()
 
 def retrieve(state: GraphState):
-    print("--- [NODE: RETRIEVE] Fetching relevant docs ---")
     question = state["question"]
     current_retriever = retriever if retriever is not None else build_retriever()
     documents = current_retriever.invoke(question)
@@ -65,7 +62,6 @@ def retrieve(state: GraphState):
     }
 
 def grade_documents(state: GraphState):
-    print("--- [NODE: GRADE DOCS] Checking relevance ---")
     question = state["question"]
     documents = state.get("documents", [])
     filtered_docs = []
@@ -75,11 +71,9 @@ def grade_documents(state: GraphState):
             filtered_docs.append(doc)
 
     web_search = "Yes" if len(filtered_docs) == 0 else "No"
-    print(f"--- [DECISION] Relevant docs: {len(filtered_docs)} | Trigger Web Search: {web_search} ---")
     return {"documents": filtered_docs, "question": question, "web_search": web_search}
 
 def transform_query(state: GraphState):
-    print("--- [NODE: TRANSFORM QUERY] Optimizing query for search ---")
     question = state["question"]
     try:
         llm = get_llm()
@@ -91,14 +85,12 @@ def transform_query(state: GraphState):
     return {"question": better_query}
 
 def fallback_search(state: GraphState):
-    print("--- [NODE: TAVILY SEARCH] Searching the live web ---")
     query = state["question"]
-    tavily_key = get_clean_key("TAVILY_API_KEY")
     web_doc = []
     
-    if tavily_key and len(tavily_key) > 10:
+    if TAVILY_API_KEY:
         try:
-            client = TavilyClient(api_key=tavily_key)
+            client = TavilyClient(api_key=TAVILY_API_KEY)
             search_results = client.search(query=query, max_results=3)
             web_context = "\n".join([res.get("content", "") for res in search_results.get("results", []) if res.get("content")])
             if web_context.strip():
@@ -112,8 +104,6 @@ def fallback_search(state: GraphState):
 
 def generate(state: GraphState):
     current_retry = state.get("retry_count", 0) + 1
-    print("--- [NODE: GENERATE] Generating synthesized response ---")
-    
     question = state["question"]
     documents = state.get("documents", [])
     context_text = "\n\n".join([d.page_content for d in documents if d.page_content.strip()])
