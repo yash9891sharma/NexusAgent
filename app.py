@@ -185,7 +185,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### ⚙️ System Architecture")
-    st.markdown("• **LLM Model:** Groq Llama-3.1-8B")
+    st.markdown("• **LLM Model:** Google Gemini 3.6 Flash ")
     st.markdown("• **Embeddings:** MiniLM-L6-v2")
     st.markdown("• **Vector DB:** ChromaDB Vector Store")
     st.markdown("• **Web Search:** Tavily Fallback Engine")
