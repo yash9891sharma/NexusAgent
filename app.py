@@ -3,10 +3,16 @@ import time
 import tempfile
 import os
 
-# ---> APNE BACKEND IMPORTS YAHAN RAKHEIN <---
-# (Agar aapke functions ka naam alag hai, toh inhe update kar lein)
+# --- BACKEND IMPORTS ---
 from src.graph import nexus_app
 from src.nodes import build_retriever 
+
+# --- STREAMING FUNCTION ---
+def stream_text(text):
+    """Creates a typewriter effect for the final text output."""
+    for word in text.split(" "):
+        yield word + " "
+        time.sleep(0.04)
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -18,7 +24,7 @@ st.set_page_config(
 
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-    st.image("logo.svg", width=150) # Agar logo nahi dikhe toh is line ko comment kar dein
+    # st.image("logo.svg", width=150) # Uncomment if you have a logo.svg in your directory
     st.markdown("### 📁 Upload Documents")
     st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
@@ -55,7 +61,6 @@ with st.sidebar:
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
 
-
 # --- MAIN CHAT HEADER ---
 st.title("Nexus Autonomous AI")
 st.markdown("Engineered & Built by **Yash Sharma** `CREATOR`")
@@ -70,13 +75,11 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        
-        # Trace sirf tab dikhega jab expander click hoga
         if "trace" in message and message["trace"]:
             with st.expander("🛠️ View AI Execution Trace"):
                 st.markdown(message["trace"])
 
-# --- CHAT INPUT & GENERATION ---
+# --- CHAT INPUT & LIVE GENERATION ---
 if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
     
     # 1. User Message Display & Save
@@ -84,32 +87,35 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Assistant Message Display & Generation
+    # 2. Assistant Message Generation with Live Streaming
     with st.chat_message("assistant"):
-        with st.spinner("Nexus is thinking..."):
-            start_time = time.time()
-            
-            # --- GRAPH INVOCATION ---
-            # Dhyaan dein: Agar aapka inputs format alag hai toh ise adjust karein
-            inputs = {"question": prompt}
-            
+        inputs = {"question": prompt}
+        final_state = None
+        
+        # Status container to show live LangGraph node execution
+        with st.status("Initializing Nexus Agent...", expanded=True) as status:
             try:
-                # Agent ko run karein
-                result = nexus_app.invoke(inputs)
+                # Stream outputs from the LangGraph nodes
+                for output in nexus_app.stream(inputs):
+                    for node_name, node_state in output.items():
+                        status.update(label=f"Executing node: **{node_name}**...", state="running")
+                        final_state = node_state
                 
-                end_time = time.time()
-                time_taken = round(end_time - start_time, 2)
+                status.update(label="Graph execution complete!", state="complete")
                 
-                # --- RESULT EXTRACTION ---
-                # Aapke nodes.py ke hisaab se keys ka naam ("generation", "trace", etc.) update kar lein
-                final_response = result.get("generation", "Error: No response generated.")
-                trace_text = result.get("trace", "Execution trace unavailable.")
+                # Extract final values
+                if final_state:
+                    final_response = final_state.get("generation", "Error: No response generated.")
+                    trace_text = final_state.get("trace", "Execution trace unavailable.")
+                else:
+                    final_response = "Error: System returned an empty state."
+                    trace_text = ""
+
+                # Write final response using typewriter effect
+                st.write_stream(stream_text(final_response))
                 
-                # Clean text output
-                st.markdown(final_response)
-                
-                # Hidden Trace Box with Execution Time
-                with st.expander(f"✓ Done in {time_taken}s - View AI Execution Trace"):
+                # Hide the execution trace in an expander
+                with st.expander("🛠️ View AI Execution Trace"):
                     st.markdown(trace_text)
                     
                 # 3. Save Assistant Message
@@ -118,6 +124,7 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
                     "content": final_response,
                     "trace": trace_text
                 })
-                
+
             except Exception as e:
+                status.update(label="Execution Failed", state="error")
                 st.error(f"An error occurred: {str(e)}")
