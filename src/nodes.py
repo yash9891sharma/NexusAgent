@@ -1,3 +1,39 @@
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+def intelligent_router(state: GraphState):
+    """
+    Sawaal ko analyze karta hai aur decide karta hai ki PDF search karni hai ya direct answer dena hai.
+    """
+    question = state["question"]
+    
+    # Ek chota aur fast prompt jo route decide karega
+    router_prompt = PromptTemplate(
+        template="""You are an expert router for an AI agent. 
+        Analyze the user question: '{question}'
+        
+        If the question requires looking into uploaded documents, manuals, or local PDFs, output 'vectorstore'.
+        If it is a general knowledge question, coding help, casual chat, or current events, output 'websearch' or 'direct'.
+        
+        Return ONLY one word: either 'vectorstore' or 'direct'. Do not add any extra text.""",
+        input_variables=["question"]
+    )
+    
+    try:
+        llm = get_llm()
+        chain = router_prompt | llm | StrOutputParser()
+        route = chain.invoke({"question": question}).strip().lower()
+        
+        print(f"--- [ROUTER DECISION]: Route chosen -> {route} ---")
+        
+        if "vectorstore" in route:
+            return "vectorstore"
+        else:
+            return "direct"
+    except Exception as e:
+        print(f"--- [ROUTER ERROR]: {e}, defaulting to vectorstore ---")
+        return "vectorstore"
+    
 from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
