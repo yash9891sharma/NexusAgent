@@ -60,6 +60,33 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
+        # Yeh purana Clear Chat button hai
+    if st.button("🗑️ Clear Chat History", use_container_width=True):
+        st.session_state.messages = []
+
+    # ---- YAHAN SE NAYA CODE PASTE KAREIN ----
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 💾 Save Session")
+    
+    if len(st.session_state.messages) > 0:
+        chat_export = "Nexus Autonomous AI - Session History\n"
+        chat_export += "="*40 + "\n\n"
+        
+        for msg in st.session_state.messages:
+            role = "🧑‍💻 USER" if msg["role"] == "user" else "🤖 NEXUS"
+            chat_export += f"{role}:\n{msg['content']}\n\n"
+            chat_export += "-"*40 + "\n"
+            
+        st.download_button(
+            label="📥 Download Chat Log",
+            data=chat_export,
+            file_name="nexus_session.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    else:
+        st.info("Start chatting to enable download.")
+    
 
 import base64
 
