@@ -104,9 +104,17 @@ def generate(state: GraphState):
     current_retry = state.get("retry_count", 0) + 1
     question = state["question"]
     documents = state.get("documents", [])
-    context_text = "\n\n".join([d.page_content for d in documents if d.page_content.strip()])
+    formatted_docs = []
+    for doc in documents:
+        page_num = doc.metadata.get("page", "Unknown")
+        if isinstance(page_num, int):
+            page_num += 1
+        formatted_docs.append(f"[Source: Page {page_num}]\n{doc.page_content}")
+    context_text = "\n\n---\n\n".join(formatted_docs)
     
     prompt = f"""You are Nexus Agent, an intelligent autonomous RAG system designed and engineered by Yash Sharma.
+    IMPORTANT RULE: You must always cite the source page number at the very end of your final answer. Use the format "Source: Page X".
+
 Context:
 {context_text if context_text else "No external document context found."}
 Question: {question}
