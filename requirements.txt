@@ -3,10 +3,12 @@ langgraph
 langchain
 langchain-core
 langchain-community
-langchain-groq
 langchain-text-splitters
 pypdf
 chromadb
 sentence-transformers
 tavily-python
 python-dotenv
+langchain-google-genai
+google-generativeai
+sentence-transformers
