@@ -1,7 +1,7 @@
 # ⚡ Nexus Agent: Self-Correcting Agentic RAG System
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://yash-nexus-agent.streamlit.app)
 
-An intelligent, self-correcting Retrieval-Augmented Generation (RAG) agent built with **LangGraph**, **Groq (Qwen)**, **ChromaDB**, and **Tavily Web Search**.
+An intelligent, self-correcting Retrieval-Augmented Generation (RAG) agent built with **LangGraph**, **Gemini (Qwen)**, **ChromaDB**, and **Tavily Web Search**.
 
 ## 🚀 Key Features
 - **Local Document Retrieval**: Fast semantic search over custom PDF resumes using ChromaDB.
