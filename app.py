@@ -59,15 +59,15 @@ with st.sidebar:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 1. Clear Chat Button (Ab sirf ek baar hai)
+   # 1. Clear Chat Button
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
 
-    # 2. Save Session Feature
+    # 2. Save Session Feature (Safe check ke sath)
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 💾 Save Session")
     
-    if len(st.session_state.messages) > 0:
+    if "messages" in st.session_state and len(st.session_state.messages) > 0:
         chat_export = "Nexus Autonomous AI - Session History\n"
         chat_export += "="*40 + "\n\n"
         
