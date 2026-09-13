@@ -1,5 +1,5 @@
 import os
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
 def get_clean_key(name: str) -> str:
@@ -16,9 +16,12 @@ def get_clean_key(name: str) -> str:
 
 def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
-        api_key = get_clean_key("GROQ_API_KEY")
-        llm = ChatGroq(
-            model="llama3-70b-8192",
+        api_key = get_clean_key("GOOGLE_API_KEY")
+        if not api_key:
+             raise ValueError("API Key is missing!")
+             
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
             api_key=api_key
         )

@@ -5,12 +5,20 @@ import tempfile
 from PIL import Image
 import streamlit as st
 
-# --- Auto-Clean API Keys ---
-for key in ["GROQ_API_KEY", "TAVILY_API_KEY"]:
-    if key in st.secrets:
-        raw_val = str(st.secrets[key])
-        os.environ[key] = "".join(raw_val.split()).strip('"\'')
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
+# Safe Key Loader (Works both locally with .env and on Cloud with st.secrets)
+for key in ["GROQ_API_KEY", "TAVILY_API_KEY", "GOOGLE_API_KEY"]:
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            raw_val = str(st.secrets[key])
+            os.environ[key] = "".join(raw_val.split()).strip('"\'')
+    except Exception:
+        pass
+    
 # --- Robust Favicon Loader ---
 fav_icon = "⚡"
 if os.path.exists("logo.png"):
