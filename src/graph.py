@@ -1,12 +1,11 @@
 from langgraph.graph import END, StateGraph
 from src.state import GraphState
 from src.nodes import (
-    intelligent_router,
     retrieve,
     grade_documents,
     generate,
     transform_query,
-    fallback_search
+    fallback_search,
     intelligent_router
 )
 
@@ -17,6 +16,7 @@ def decide_to_generate(state: GraphState):
     return "generate"
 
 workflow = StateGraph(GraphState)
+
 workflow.add_node("intelligent_router", intelligent_router)
 workflow.add_node("retrieve", retrieve)
 workflow.add_node("grade_documents", grade_documents)
@@ -24,10 +24,9 @@ workflow.add_node("transform_query", transform_query)
 workflow.add_node("web_search", fallback_search)
 workflow.add_node("generate", generate)
 
-workflow.set_entry_point("retrieve")
-workflow.add_edge("retrieve", "grade_documents")
+workflow.set_entry_point("intelligent_router")
+
 workflow.add_conditional_edges(
-    workflow.add_conditional_edges(
     "intelligent_router",
     lambda state: state.get("route", "vectorstore"),
     {
@@ -35,11 +34,14 @@ workflow.add_conditional_edges(
         "direct": "generate"
     }
 )
+
+workflow.add_edge("retrieve", "grade_documents")
+workflow.add_conditional_edges(
     "grade_documents",
     decide_to_generate,
     {
         "transform_query": "transform_query",
-        "generate": "generate"
+        "generate": "generate",
     }
 )
 workflow.add_edge("transform_query", "web_search")
