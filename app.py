@@ -24,7 +24,7 @@ st.set_page_config(
 
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-    # st.image("logo.svg", width=150) # Uncomment if you have a logo.svg in your directory
+    st.image("logo.svg", width=150) 
     st.markdown("### 📁 Upload Documents")
     st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
