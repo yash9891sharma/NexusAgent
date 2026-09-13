@@ -23,8 +23,8 @@ st.set_page_config(
 )
 
 # --- SIDEBAR & ARCHITECTURE ---
+    # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-
     st.markdown("### 📁 Upload Documents")
     st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
@@ -58,13 +58,12 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
-        st.session_state.messages = []
-        # Yeh purana Clear Chat button hai
+    
+    # 1. Clear Chat Button (Ab sirf ek baar hai)
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
 
-    # ---- YAHAN SE NAYA CODE PASTE KAREIN ----
+    # 2. Save Session Feature
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 💾 Save Session")
     
@@ -86,7 +85,6 @@ with st.sidebar:
         )
     else:
         st.info("Start chatting to enable download.")
-    
 
 import base64
 
