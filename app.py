@@ -61,24 +61,35 @@ with st.sidebar:
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
 
-# --- MAIN CHAT HEADER ---
-# --- MAIN CHAT HEADER ---
-# 1. Logo in Center
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    st.image("logo.svg", width=250)
+import base64
 
-# 2. Text in Center (Using HTML for alignment)
-st.markdown("<h1 style='text-align: center; margin-bottom: 10px;'>Nexus Autonomous AI</h1>", unsafe_allow_html=True)
+# --- MAIN CHAT HEADER ---
+# Logo file ko securely HTML mein dikhane ke liye function
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+try:
+    img_b64 = get_base64_image("logo.svg")
+    img_html = f'<img src="data:image/svg+xml;base64,{img_b64}" width="220" style="margin-bottom: 15px;">'
+except FileNotFoundError:
+    img_html = "" # Agar logo nahi mila toh crash nahi hoga
+
+# Logo aur Title dono ko ek hi Center-Aligned block mein lock kar diya
 st.markdown(
-    "<p style='text-align: center; font-size: 15px;'>"
-    "Engineered & Built by <b>Yash Sharma</b> <code>CREATOR</code><br>"
-    "Ask questions about your uploaded documents or any real-time topic."
-    "</p>", 
+    f"""
+    <div style="text-align: center;">
+        {img_html}
+        <h1 style="margin-bottom: 10px; margin-top: 0px;">Nexus Autonomous AI</h1>
+        <p style="font-size: 15px; color: #a1a1aa;">
+            Engineered & Built by <b style="color: white;">Yash Sharma</b> <code style="font-size: 12px;">CREATOR</code><br>
+            Ask questions about your uploaded documents or any real-time topic.
+        </p>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 st.divider()
-
 # --- CHAT HISTORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
