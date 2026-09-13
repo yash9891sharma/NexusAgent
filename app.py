@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Safe Key Loader (Works both locally with .env and on Cloud with st.secrets)
-for key in ["GROQ_API_KEY", "TAVILY_API_KEY", "GOOGLE_API_KEY"]:
+for key in ["Gemini_API_KEY", "TAVILY_API_KEY", "GOOGLE_API_KEY"]:
     try:
         import streamlit as st
         if key in st.secrets:
@@ -165,7 +165,7 @@ with st.sidebar:
     st.markdown("""
         <div class="badge-container">
             <span class="badge-pill">Autonomous RAG</span>
-            <span class="badge-pill">Llama-3.1</span>
+            <span class="badge-pill">Gemini-3.6</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -269,7 +269,7 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
                     elif key == "generate":
                         final_output = value.get("generation")
                         status.write("✨ Synthesizing final answer...")
-                        state_history.append("• Step 5: Generated final response with Groq LLM")
+                        state_history.append("• Step 5: Generated final response with Google  LLM")
 
             elapsed = round(time.time() - start_time, 2)
             status.update(label=f"✓ Done in {elapsed}s", state="complete", expanded=False)
