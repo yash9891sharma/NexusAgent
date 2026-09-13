@@ -12,3 +12,4 @@ python-dotenv
 langchain-google-genai
 google-generativeai
 sentence-transformers
+torchvision
