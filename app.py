@@ -62,13 +62,21 @@ with st.sidebar:
         st.session_state.messages = []
 
 # --- MAIN CHAT HEADER ---
+# --- MAIN CHAT HEADER ---
+# 1. Logo in Center
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     st.image("logo.svg", width=250)
 
-st.title("Nexus Autonomous AI")
-st.markdown("Engineered & Built by **Yash Sharma** `CREATOR`")
-st.markdown("Ask questions about your uploaded documents or any real-time topic.")
+# 2. Text in Center (Using HTML for alignment)
+st.markdown("<h1 style='text-align: center; margin-bottom: 10px;'>Nexus Autonomous AI</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align: center; font-size: 15px;'>"
+    "Engineered & Built by <b>Yash Sharma</b> <code>CREATOR</code><br>"
+    "Ask questions about your uploaded documents or any real-time topic."
+    "</p>", 
+    unsafe_allow_html=True
+)
 st.divider()
 
 # --- CHAT HISTORY INITIALIZATION ---
