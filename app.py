@@ -24,7 +24,7 @@ st.set_page_config(
 
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-    st.image("logo.svg", width=150) 
+
     st.markdown("### 📁 Upload Documents")
     st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
@@ -62,6 +62,10 @@ with st.sidebar:
         st.session_state.messages = []
 
 # --- MAIN CHAT HEADER ---
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    st.image("logo.svg", width=250)
+
 st.title("Nexus Autonomous AI")
 st.markdown("Engineered & Built by **Yash Sharma** `CREATOR`")
 st.markdown("Ask questions about your uploaded documents or any real-time topic.")
