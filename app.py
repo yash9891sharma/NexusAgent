@@ -1,177 +1,28 @@
-import os
-import time
-import base64
-import tempfile
-from PIL import Image
 import streamlit as st
-
+import time
+import tempfile
 import os
-from dotenv import load_dotenv
-load_dotenv()
 
-# Safe Key Loader (Works both locally with .env and on Cloud with st.secrets)
-for key in ["Gemini_API_KEY", "TAVILY_API_KEY", "GOOGLE_API_KEY"]:
-    try:
-        import streamlit as st
-        if key in st.secrets:
-            raw_val = str(st.secrets[key])
-            os.environ[key] = "".join(raw_val.split()).strip('"\'')
-    except Exception:
-        pass
-    
-# --- Robust Favicon Loader ---
-fav_icon = "⚡"
-if os.path.exists("logo.png"):
-    try:
-        fav_icon = Image.open("logo.png")
-    except Exception:
-        fav_icon = "⚡"
+# ---> APNE BACKEND IMPORTS YAHAN RAKHEIN <---
+# (Agar aapke functions ka naam alag hai, toh inhe update kar lein)
+from src.graph import nexus_app
+from src.nodes import build_retriever 
 
-# --- Page Configuration ---
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Nexus AI | Engineered by Yash Sharma",
-    page_icon=fav_icon,
+    page_title="Nexus Autonomous AI", 
+    page_icon="🤖", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
-from src.graph import nexus_app
-from src.nodes import build_retriever
 
-# --- Futuristic Cyberpunk Styling ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-    /* Global Dark Canvas */
-    .stApp {
-        background: radial-gradient(circle at 15% 15%, #0d1322 0%, #05070d 100%) !important;
-        color: #e2e8f0 !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* Ambient Cyber Grid Overlay */
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: linear-gradient(rgba(0, 242, 254, 0.02) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0, 242, 254, 0.02) 1px, transparent 1px);
-        background-size: 30px 30px;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    /* Sidebar Alignment & Shift Upwards */
-    section[data-testid="stSidebar"] {
-        background-color: rgba(9, 14, 26, 0.95) !important;
-        border-right: 1px solid rgba(0, 242, 254, 0.2) !important;
-    }
-
-    section[data-testid="stSidebar"] .block-container,
-    [data-testid="stSidebarContent"] {
-        padding-top: 0.8rem !important;
-    }
-
-    /* Centered Logo Box */
-    .sidebar-logo-box {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        margin-top: 0px;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-
-    .sidebar-logo-box img {
-        width: 155px !important;
-        height: auto !important;
-        display: block;
-        margin: 0 auto !important;
-    }
-
-    /* Centered Badges */
-    .badge-container {
-        display: flex;
-        justify-content: center;
-        gap: 6px;
-        margin-top: 4px;
-        margin-bottom: 16px;
-    }
-
-    .badge-pill {
-        display: inline-block;
-        padding: 3px 9px;
-        font-size: 11px;
-        font-weight: 600;
-        border-radius: 4px;
-        border: 1px solid #00f2fe;
-        color: #00f2fe;
-        background: rgba(0, 242, 254, 0.1);
-    }
-
-    /* Chat Bubbles */
-    .stChatMessage {
-        background: rgba(15, 23, 42, 0.75) !important;
-        border: 1px solid rgba(0, 242, 254, 0.15) !important;
-        border-radius: 12px !important;
-        backdrop-filter: blur(8px) !important;
-        margin-bottom: 12px !important;
-    }
-
-    div[data-testid="stChatMessage"]:nth-child(odd) {
-        border-left: 3px solid #4facfe !important;
-    }
-
-    div[data-testid="stChatMessage"]:nth-child(even) {
-        border-left: 3px solid #00f2fe !important;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.08) !important;
-    }
-
-    /* Terminal Chat Input */
-    div[data-testid="stChatInput"] input {
-        background: rgba(15, 23, 42, 0.9) !important;
-        border: 1px solid rgba(0, 242, 254, 0.3) !important;
-        border-radius: 8px !important;
-        color: #00f2fe !important;
-    }
-
-    div[data-testid="stChatInput"] input:focus {
-        border-color: #00f2fe !important;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.25) !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Function to encode logo for zero-margin centered rendering
-def get_logo_html():
-    file_path = "logo.svg" if os.path.exists("logo.svg") else ("logo.png" if os.path.exists("logo.png") else None)
-    if not file_path:
-        return ""
-    mime = "image/svg+xml" if file_path.endswith(".svg") else "image/png"
-    with open(file_path, "rb") as f:
-        data = base64.b64encode(f.read()).decode("utf-8")
-    return f'''
-        <div class="sidebar-logo-box">
-            <img src="data:{mime};base64,{data}" alt="Nexus Logo">
-        </div>
-    '''
-
-# --- Sidebar Deck ---
+# --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-    st.markdown(get_logo_html(), unsafe_allow_html=True)
-
-    st.markdown("""
-        <div class="badge-container">
-            <span class="badge-pill">Autonomous RAG</span>
-            <span class="badge-pill">Gemini-3.6</span>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.image("logo.svg", width=150) # Agar logo nahi dikhe toh is line ko comment kar dein
     st.markdown("### 📁 Upload Documents")
-    uploaded_file = st.file_uploader("Upload PDF to index into knowledge base", type=["pdf"])
+    st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
+    uploaded_file = st.file_uploader("", type=["pdf"])
     if uploaded_file is not None:
         if "last_uploaded" not in st.session_state or st.session_state.last_uploaded != uploaded_file.name:
             with st.spinner("Processing & indexing document..."):
@@ -181,103 +32,92 @@ with st.sidebar:
                 
                 build_retriever(tmp_path)
                 st.session_state.last_uploaded = uploaded_file.name
-                st.success(f"✓ Ready: {uploaded_file.name}")
+                st.success(f"Ready: {uploaded_file.name}")
 
     st.markdown("---")
     st.markdown("### ⚙️ System Architecture")
-    st.markdown("• **LLM Model:** Google Gemini 3.6 Flash ")
+    st.markdown("• **LLM Model:** Google Gemini 3.6 Flash")
     st.markdown("• **Embeddings:** MiniLM-L6-v2")
     st.markdown("• **Vector DB:** ChromaDB Vector Store")
     st.markdown("• **Web Search:** Tavily Fallback Engine")
-
-    # Developer Signature Card
+    
     st.markdown("---")
+    # Developer Signature Card
     st.markdown("""
-        <div style="padding: 12px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: 10px; text-align: center;">
+        <div style="padding: 12px; background: rgba(15, 23, 42, 0.7); border-radius: 8px; text-align: center; border: 1px solid #1e293b;">
             <div style="font-size: 11px; color: #64748b; letter-spacing: 1px; text-transform: uppercase;">Lead Engineer</div>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700; color: #ffffff; margin: 4px 0;">Yash Sharma</div>
+            <div style="font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; margin: 4px 0;">Yash Sharma</div>
             <div style="font-size: 11px; color: #00f2fe;">Autonomous AI & RAG Specialist</div>
         </div>
     """, unsafe_allow_html=True)
-
+    
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🗑 Clear Chat History", use_container_width=True):
+    if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
-        st.rerun()
 
-# --- Main Dashboard Header ---
-col1, col2 = st.columns([0.78, 0.22])
-with col1:
-    st.markdown("""
-        <h1 style="font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 800; 
-                   background: linear-gradient(90deg, #00f2fe, #4facfe); 
-                   -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2px;">
-            Nexus Autonomous AI
-        </h1>
-        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">
-            Engineered & Built by <span style="color: #00f2fe; font-weight: 600;">Yash Sharma</span> 
-            <span style="background: rgba(0,242,254,0.12); color: #00f2fe; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px; border: 1px solid rgba(0,242,254,0.3);">CREATOR</span>
-        </div>
-    """, unsafe_allow_html=True)
-    st.caption("Ask questions about your uploaded documents or any real-time topic.")
-with col2:
-    st.markdown("""
-        <div style="text-align: right; padding-top: 15px;">
-            <span style="color: #22c55e; font-size: 13px; font-weight: 600;">● System Ready</span>
-        </div>
-    """, unsafe_allow_html=True)
 
-st.markdown("---")
+# --- MAIN CHAT HEADER ---
+st.title("Nexus Autonomous AI")
+st.markdown("Engineered & Built by **Yash Sharma** `CREATOR`")
+st.markdown("Ask questions about your uploaded documents or any real-time topic.")
+st.divider()
 
+# --- CHAT HISTORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display Chat History
+# --- DISPLAY CLEAN CHAT HISTORY ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        
+        # Trace sirf tab dikhega jab expander click hoga
+        if "trace" in message and message["trace"]:
+            with st.expander("🛠️ View AI Execution Trace"):
+                st.markdown(message["trace"])
 
-# User Query Execution Pipeline
+# --- CHAT INPUT & GENERATION ---
 if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
+    
+    # 1. User Message Display & Save
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # 2. Assistant Message Display & Generation
     with st.chat_message("assistant"):
-        status_placeholder = st.empty()
-        with status_placeholder.status("⚙️ Thinking & checking documents...", expanded=True) as status:
-            inputs = {"question": prompt, "retry_count": 0}
-            state_history = []
-            final_output = None
-
+        with st.spinner("Nexus is thinking..."):
             start_time = time.time()
-            for output in nexus_app.stream(inputs):
-                for key, value in output.items():
-                    if key == "retrieve":
-                        status.write("📄 Searching relevant context in documents...")
-                        state_history.append("• Step 1: Checked document vector store")
-                    elif key == "grade_documents":
-                        is_web = value.get('web_search', 'No')
-                        status.write(f"⚖️ Evaluating document relevance (Need Web Search: `{is_web}`)")
-                        state_history.append(f"• Step 2: Graded document relevance (Web Search = {is_web})")
-                    elif key == "transform_query":
-                        status.write("🔄 Re-phrasing query for online search...")
-                        state_history.append("• Step 3: Optimized search keywords for web fallback")
-                    elif key == "web_search":
-                        status.write("🌐 Fetching real-time information from web...")
-                        state_history.append("• Step 4: Searched live internet via Tavily API")
-                    elif key == "generate":
-                        final_output = value.get("generation")
-                        status.write("✨ Synthesizing final answer...")
-                        state_history.append("• Step 5: Generated final response with Google  LLM")
-
-            elapsed = round(time.time() - start_time, 2)
-            status.update(label=f"✓ Done in {elapsed}s", state="complete", expanded=False)
-
-        if final_output:
-            st.markdown(final_output)
-            st.session_state.messages.append({"role": "assistant", "content": final_output})
             
-            with st.expander("🔍 See Step-by-Step AI Execution Trace"):
-                for step in state_history:
-                    st.markdown(step)
+            # --- GRAPH INVOCATION ---
+            # Dhyaan dein: Agar aapka inputs format alag hai toh ise adjust karein
+            inputs = {"question": prompt}
+            
+            try:
+                # Agent ko run karein
+                result = nexus_app.invoke(inputs)
+                
+                end_time = time.time()
+                time_taken = round(end_time - start_time, 2)
+                
+                # --- RESULT EXTRACTION ---
+                # Aapke nodes.py ke hisaab se keys ka naam ("generation", "trace", etc.) update kar lein
+                final_response = result.get("generation", "Error: No response generated.")
+                trace_text = result.get("trace", "Execution trace unavailable.")
+                
+                # Clean text output
+                st.markdown(final_response)
+                
+                # Hidden Trace Box with Execution Time
+                with st.expander(f"✓ Done in {time_taken}s - View AI Execution Trace"):
+                    st.markdown(trace_text)
+                    
+                # 3. Save Assistant Message
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": final_response,
+                    "trace": trace_text
+                })
+                
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
