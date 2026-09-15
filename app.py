@@ -128,13 +128,12 @@ if "messages" not in st.session_state:
 
 # --- DISPLAY CLEAN CHAT HISTORY ---
 for message in st.session_state.messages:
-   avatar_path = "logo.svg" if message["role"] == "assistant" else None 
-with st.chat_message(message["role"], avatar=avatar_path):
+    # Seedha inline condition pass kar rahe hain, koi variable ki zaroorat nahi
+    with st.chat_message(message["role"], avatar="logo.svg" if message["role"] == "assistant" else None):
         st.markdown(message["content"])
         if "trace" in message and message["trace"]:
             with st.expander("🛠️ View AI Execution Trace"):
                 st.markdown(message["trace"])
-
 # --- CHAT INPUT & LIVE GENERATION ---
 if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
     
