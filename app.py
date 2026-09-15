@@ -121,7 +121,8 @@ if "messages" not in st.session_state:
 
 # --- DISPLAY CLEAN CHAT HISTORY ---
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
+   avatar_path = "logo.svg" if message["role"] == "assistant" else None 
+with st.chat_message(message["role"], avatar=avatar_path):
         st.markdown(message["content"])
         if "trace" in message and message["trace"]:
             with st.expander("🛠️ View AI Execution Trace"):
@@ -136,7 +137,7 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
         st.markdown(prompt)
 
 # 2. Assistant Message Generation with Clean Typewriter Stream
-with st.chat_message("assistant"):
+with st.chat_message("assistant",avatar="logo.svg"):
     inputs = {"question": prompt}
     
     # Ek temporary placeholder live status ke liye
