@@ -23,31 +23,32 @@ st.set_page_config(
 )
 
 # --- SIDEBAR & ARCHITECTURE ---
-    # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
-    st.markdown("### 📁 Upload Documents")
+    st.markdown("### 📂 Upload Documents")
     st.markdown("<span style='font-size: 12px;'>Upload PDF to index into knowledge base</span>", unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("", type=["pdf"])
     if uploaded_file is not None:
-        if "last_uploaded" not in st.session_state or st.session_state.last_uploaded != uploaded_file.name:
+        # Check karein ki file pehle se list mein hai ya nahi taaki duplicate entry na ho
+        if uploaded_file.name not in st.session_state.uploaded_files_list:
             with st.spinner("Processing & indexing document..."):
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getvalue())
                     tmp_path = tmp_file.name
-                
+
                 build_retriever(tmp_path)
-                st.session_state.last_uploaded = uploaded_file.name
+                st.session_state.uploaded_files_list.append(uploaded_file.name)
                 st.success(f"Ready: {uploaded_file.name}")
 
+    # --- INDEXED DOCUMENTS STATUS TRACKER ---
     st.markdown("---")
-    st.markdown("### ⚙️ System Architecture")
-    st.markdown("• **LLM Model:** Google Gemini 3.6 Flash")
-    st.markdown("• **Embeddings:** MiniLM-L6-v2")
-    st.markdown("• **Vector DB:** ChromaDB Vector Store")
-    st.markdown("• **Web Search:** Tavily Fallback Engine")
+    st.markdown("### 📚 Indexed Knowledge Base")
     
-    st.markdown("---")
+    if st.session_state.uploaded_files_list:
+        for file_name in st.session_state.uploaded_files_list:
+            st.markdown(f"✅ <span style='font-size: 13px; color: #e2e8f0;'>{file_name}</span>", unsafe_allow_html=True)
+    else:
+        st.markdown("<span style='font-size: 12px; color: #94a3b8;'>No documents indexed yet.</span>", unsafe_allow_html=True)
     # Developer Signature Card
     st.markdown("""
         <div style="padding: 12px; background: rgba(15, 23, 42, 0.7); border-radius: 8px; text-align: center; border: 1px solid #1e293b;">
@@ -115,6 +116,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.divider()
+# Uploaded files tracker initialization
+if "uploaded_files_list" not in st.session_state:
+    st.session_state.uploaded_files_list = []
 # --- CHAT HISTORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
