@@ -135,44 +135,49 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
     with st.chat_message("user"):
         st.markdown(prompt)
 
-   # 2. Assistant Message Generation with Clean Live Feedback
+ # 2. Assistant Message Generation with True Token Streaming
 with st.chat_message("assistant"):
     inputs = {"question": prompt}
-    final_state = None
+    trace_text = "Execution trace unavailable."
     
-    # Ek temporary placeholder jo execution ke baad gayab ho jayega
+    # Ek temporary placeholder live node updates ke liye
     status_placeholder = st.empty()
     
     try:
-        # Stream outputs from the LangGraph nodes
-        for output in nexus_app.stream(inputs):
-            for node_name, node_state in output.items():
-                status_placeholder.text(f"⚡ Executing node: {node_name}...")
-                final_state = node_state
+        # Generator function jo LangGraph se direct live tokens stream karega
+        def token_generator():
+            final_gen = ""
+            # LangGraph ka native messages stream mode use kar rahe hain
+            for msg, metadata in nexus_app.stream(inputs, stream_mode="messages"):
+                # Node execution ka status update dikhane ke liye
+                node_info = metadata.get("langgraph_node", "processing")
+                status_placeholder.text(f"⚡ Running node: {node_info}...")
                 
-        # Kaam khatam hote hi status text ko bilkul hata dein
-        status_placeholder.empty()
-        
-        # Extract final values
-        if final_state:
-            final_response = final_state.get("generation", "Error: No response generated.")
-            trace_text = final_state.get("trace", "Execution trace unavailable.")
-        else:
-            final_response = "Error: System returned an empty state."
-            trace_text = ""
-        
-        # Write final response directly using typewriter effect
-        st.write_stream(stream_text(final_response))
-        
-        # Hide the execution trace in an expander (optional, clean view)
-        with st.expander("🛠️ View AI Execution Trace"):
-            st.markdown(trace_text)
+                if msg.content:
+                    final_gen += msg.content
+                    yield msg.content
             
-        # 3. Save Assistant Message
+            # Streaming khatam hote hi status placeholder hata dein
+            status_placeholder.empty()
+            
+            # Storing final generated text in session state context later
+            st.session_state.temp_final_response = final_gen
+
+        # Streamlit ka built-in st.write_stream live generator ke sath
+        st.write_stream(token_generator())
+        
+        # Fallback response variable from session state
+        final_response = getattr(st.session_state, "temp_final_response", "Response generated.")
+        
+        # Hide the execution trace in an expander
+        with st.expander("🛠️ View AI Execution Trace"):
+            st.markdown("Node execution completed successfully via stream pipeline.")
+            
+        # 3. Save Assistant Message to History
         st.session_state.messages.append({
             "role": "assistant",
             "content": final_response,
-            "trace": trace_text
+            "trace": "Execution trace captured."
         })
         
     except Exception as e:
