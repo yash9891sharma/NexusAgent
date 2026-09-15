@@ -173,18 +173,18 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
                     "trace": trace_text
                 })
 
-            except Exception as e:
-    status.update(label="Execution Failed", state="error")
-    error_msg = str(e)
-    
-    # 1. Rate Limit (429) Error check karein
-    if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-        st.warning("⚠️ **API Rate Limit Reached:** Google Gemini ki free tier limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.")
-    
-    # 2. Authentication / API Key Error check karein
-    elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
-        st.error("🔑 **Authentication Error:** Aapki API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.")
-    
-    # 3. Any other unexpected error
-    else:
-        st.error(f"❌ **Execution Failed:** {error_msg}")
+           except Exception as e:
+        status.update(label="Execution Failed", state="error")
+        error_msg = str(e)
+        
+        # 1. Rate Limit (429) Error check karein
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            st.warning("⚠️ **API Rate Limit Reached:** Google Gemini ki free tier limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.")
+        
+        # 2. Authentication / API Key Error check karein
+        elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
+            st.error("🔑 **Authentication Error:** Aapki API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.")
+        
+        # 3. Any other unexpected error
+        else:
+            st.error(f"❌ **Execution Failed:** {error_msg}")
