@@ -2,17 +2,24 @@ import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
-def get_clean_key(name: str) -> str:
-    val = ""
-    try:
-        import streamlit as st
-        if name in st.secrets:
-            val = str(st.secrets[name])
-    except Exception:
-        pass
+def get_clean_key(key_name: str) -> str:
+    import os
+    # 1. Pehle local .env se try karein
+    val = os.getenv(key_name)
+    
+    # 2. Agar nahi mila, toh Streamlit Secrets se try karein
     if not val:
-        val = os.getenv(name, "")
-    return "".join(val.split()).strip('"\'')
+        try:
+            import streamlit as st
+            val = st.secrets.get(key_name)
+        except Exception:
+            pass
+            
+    # 3. Safe string replace (Agar key None hai toh crash nahi hoga)
+    if not val:
+        return ""
+        
+    return str(val).strip().replace("'", "").replace('"', "")
 
 def grade_doc_relevance(document_text: str, question: str) -> bool:
     try:
