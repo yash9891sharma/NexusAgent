@@ -135,89 +135,72 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
     with st.chat_message("user"):
         st.markdown(prompt)
 
-# 2. Assistant Message Generation with True Token Streaming
+# 2. Assistant Message Generation with Clean Typewriter Stream
 with st.chat_message("assistant"):
     inputs = {"question": prompt}
-    trace_text = "Execution trace unavailable."
     
-    # Ek temporary placeholder live node updates ke liye
+    # Ek temporary placeholder live status ke liye
     status_placeholder = st.empty()
     
     try:
-        # Generator function jo LangGraph se direct live tokens stream karega safely
-        def token_generator():
-            final_gen = ""
-            for msg, metadata in nexus_app.stream(inputs, stream_mode="messages"):
-                node_info = metadata.get("langgraph_node", "processing")
-                status_placeholder.text(f"⚡ Running node: {node_info}...")
-                
-                if msg.content:
-                    # Handle both string and list content safely
-                    chunk_str = ""
-                    if isinstance(msg.content, list):
-                        for part in msg.content:
-                            if isinstance(part, dict) and "text" in part:
-                                chunk_str += part["text"]
-                            else:
-                                chunk_str += str(part)
-                    else:
-                        chunk_str = str(msg.content)
-                    
-                    final_gen += chunk_str
-                    yield chunk_str
-            
-            # Streaming khatam hote hi status placeholder hata dein
-            status_placeholder.empty()
-            st.session_state.temp_final_response = final_gen
-
-        # Streamlit ka built-in st.write_stream live generator ke sath
-        st.write_stream(token_generator())
+        status_placeholder.text("⚡ Nexus Agent is processing your request...")
         
-        # Fallback response variable from session state
-        final_response = getattr(st.session_state, "temp_final_response", "Response generated.")
+        # Graph ko cleanly invoke karke final state nikalna (no multi-node duplication)
+        final_state = nexus_app.invoke(inputs)
         
-        # Hide the execution trace in an expander
+        # Kaam khatam hote hi status hata dena
+        status_placeholder.empty()
+        
+        # Extract final values safely
+        if final_state:
+            final_response = final_state.get("generation", "Error: No response generated.")
+            trace_text = final_state.get("trace", "Execution trace unavailable.")
+        else:
+            final_response = "Error: System returned an empty state."
+            trace_text = ""
+        
+        # Smooth Typewriter Effect generator (jo pehle bilkul sahi chalta tha)
+        st.write_stream(stream_text(final_response))
+        
+        # Hide execution trace in an expander
         with st.expander("🛠️ View AI Execution Trace"):
-            st.markdown("Node execution completed successfully via stream pipeline.")
+            st.markdown(trace_text)
             
         # 3. Save Assistant Message to History
         st.session_state.messages.append({
             "role": "assistant",
             "content": final_response,
-            "trace": "Execution trace captured."
+            "trace": trace_text
         })
         
     except Exception as e:
-            status_placeholder.empty()
-            error_msg = str(e)
-            
-            # Logo base64 safely fetch karna error display ke liye
-            try:
-                logo_b64 = get_base64_image("logo.svg")
-                logo_img_tag = f'<img src="data:image/svg+xml;base64,{logo_b64}" width="24" style="margin-right: 10px; vertical-align: middle;" />'
-            except Exception:
-                logo_img_tag = "🤖 "
+        status_placeholder.empty()
+        error_msg = str(e)
+        
+        # Custom branded Nexus error card
+        try:
+            logo_b64 = get_base64_image("logo.svg")
+            logo_img_tag = f'<img src="data:image/svg+xml;base64,{logo_b64}" width="24" style="margin-right: 10px; vertical-align: middle;" />'
+        except Exception:
+            logo_img_tag = "🤖 "
 
-            # 1. Rate Limit (429) Error check
-            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-                error_html = f"""
-                <div style="padding: 14px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; margin: 10px 0; color: #fcd34d;">
-                    {logo_img_tag}<strong>Nexus Notice:</strong> Google Gemini free-tier rate limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.
-                </div>
-                """
-            # 2. Authentication / API Key Error check
-            elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
-                error_html = f"""
-                <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
-                    {logo_img_tag}<strong>Nexus Security:</strong> API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.
-                </div>
-                """
-            # 3. Any other unexpected error
-            else:
-                error_html = f"""
-                <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
-                    {logo_img_tag}<strong>Nexus Execution Failed:</strong> {error_msg}
-                </div>
-                """
-            
-            st.markdown(error_html, unsafe_allow_html=True)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            error_html = f"""
+            <div style="padding: 14px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; margin: 10px 0; color: #fcd34d;">
+                {logo_img_tag}<strong>Nexus Notice:</strong> Google Gemini free-tier rate limit exceed ho gayi hai. Kripya thodi der baad try karein.
+            </div>
+            """
+        elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
+            error_html = f"""
+            <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+                {logo_img_tag}<strong>Nexus Security:</strong> API key invalid ya expire ho chuki hai. Kripya valid key update karein.
+            </div>
+            """
+        else:
+            error_html = f"""
+            <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+                {logo_img_tag}<strong>Nexus Execution Failed:</strong> {error_msg}
+            </div>
+            """
+        
+        st.markdown(error_html, unsafe_allow_html=True)
