@@ -173,8 +173,8 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
                     "trace": trace_text
                 })
 
-           except Exception as e:
-        status.update(label="Execution Failed", state="error")
+            except Exception as e:
+             status.update(label="Execution Failed", state="error")
         error_msg = str(e)
         
         # 1. Rate Limit (429) Error check karein
