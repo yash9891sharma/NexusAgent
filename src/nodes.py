@@ -113,11 +113,20 @@ def transform_query(state: GraphState):
     question = state["question"]
     try:
         llm = get_llm()
-        better_query = llm.invoke(
-            f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY keywords without quotes."
-        ).content.strip().replace('"', '')
+        response = llm.invoke(
+            f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY keywords"
+        )
+        
+        # Safe string manipulation: Pehle check karo content hai ya nahi
+        if response and response.content:
+            better_query = str(response.content).strip().replace("'", "")
+        else:
+            better_query = question
+            
     except Exception:
+        # Agar koi bhi error aaye, toh original question hi use kar lo
         better_query = question
+        
     return {"question": better_query}
 
 def fallback_search(state: GraphState):
