@@ -125,10 +125,9 @@ st.divider()
 # --- CHAT HISTORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
 # --- DISPLAY CLEAN CHAT HISTORY ---
 for message in st.session_state.messages:
-    # Seedha inline condition pass kar rahe hain, koi variable ki zaroorat nahi
+    # Seedha inline condition likhi hai, koi variable nahi banaya
     with st.chat_message(message["role"], avatar="logo.svg" if message["role"] == "assistant" else None):
         st.markdown(message["content"])
         if "trace" in message and message["trace"]:
