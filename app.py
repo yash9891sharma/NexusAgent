@@ -135,54 +135,58 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Assistant Message Generation with Live Streaming
-    with st.chat_message("assistant"):
-        inputs = {"question": prompt}
-        final_state = None
-        
-        # Status container to show live LangGraph node execution
-        with st.status("Initializing Nexus Agent...", expanded=True) as status:
-            try:
-                # Stream outputs from the LangGraph nodes
-                for output in nexus_app.stream(inputs):
-                    for node_name, node_state in output.items():
-                        status.update(label=f"Executing node: **{node_name}**...", state="running")
-                        final_state = node_state
+   # 2. Assistant Message Generation with Clean Live Feedback
+with st.chat_message("assistant"):
+    inputs = {"question": prompt}
+    final_state = None
+    
+    # Ek temporary placeholder jo execution ke baad gayab ho jayega
+    status_placeholder = st.empty()
+    
+    try:
+        # Stream outputs from the LangGraph nodes
+        for output in nexus_app.stream(inputs):
+            for node_name, node_state in output.items():
+                status_placeholder.text(f"⚡ Executing node: {node_name}...")
+                final_state = node_state
                 
-                status.update(label="Graph execution complete!", state="complete")
-                
-                # Extract final values
-                if final_state:
-                    final_response = final_state.get("generation", "Error: No response generated.")
-                    trace_text = final_state.get("trace", "Execution trace unavailable.")
-                else:
-                    final_response = "Error: System returned an empty state."
-                    trace_text = ""
-
-                # Write final response using typewriter effect
-                st.write_stream(stream_text(final_response))
-                
-                # Hide the execution trace in an expander
-                with st.expander("🛠️ View AI Execution Trace"):
-                    st.markdown(trace_text)
-                    
-                # 3. Save Assistant Message
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": final_response,
-                    "trace": trace_text
-                })
-
-            except Exception as e:
-             status.update(label="Execution Failed", state="error")
-             error_msg = str(e)
+        # Kaam khatam hote hi status text ko bilkul hata dein
+        status_placeholder.empty()
         
-        # 1. Rate Limit (429) Error check karein
-             if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-              st.warning("⚠️ **API Rate Limit Reached:** Google Gemini ki free tier limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.")
-
-             elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
-              st.error("🔑 **Authentication Error:** Aapki API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.")
+        # Extract final values
+        if final_state:
+            final_response = final_state.get("generation", "Error: No response generated.")
+            trace_text = final_state.get("trace", "Execution trace unavailable.")
+        else:
+            final_response = "Error: System returned an empty state."
+            trace_text = ""
         
-             else:
-                st.error(f"❌ **Execution Failed:** {error_msg}")
+        # Write final response directly using typewriter effect
+        st.write_stream(stream_text(final_response))
+        
+        # Hide the execution trace in an expander (optional, clean view)
+        with st.expander("🛠️ View AI Execution Trace"):
+            st.markdown(trace_text)
+            
+        # 3. Save Assistant Message
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": final_response,
+            "trace": trace_text
+        })
+        
+    except Exception as e:
+        status_placeholder.empty()
+        error_msg = str(e)
+        
+        # 1. Rate Limit (429) Error check
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            st.warning("⚠️ **API Rate Limit Reached:** Google Gemini ki free tier limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.")
+        
+        # 2. Authentication / API Key Error check
+        elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
+            st.error("🔑 **Authentication Error:** Aapki API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.")
+        
+        # 3. Any other unexpected error
+        else:
+            st.error(f"❌ **Execution Failed:** {error_msg}")
