@@ -188,17 +188,36 @@ with st.chat_message("assistant"):
         })
         
     except Exception as e:
-        status_placeholder.empty()
-        error_msg = str(e)
-        
-        # 1. Rate Limit (429) Error check
-        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-            st.warning("⚠️ **API Rate Limit Reached:** Google Gemini ki free tier limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.")
-        
-        # 2. Authentication / API Key Error check
-        elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
-            st.error("🔑 **Authentication Error:** Aapki API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.")
-        
-        # 3. Any other unexpected error
-        else:
-            st.error(f"❌ **Execution Failed:** {error_msg}")
+            status_placeholder.empty()
+            error_msg = str(e)
+            
+            # Logo base64 safely fetch karna error display ke liye
+            try:
+                logo_b64 = get_base64_image("logo.svg")
+                logo_img_tag = f'<img src="data:image/svg+xml;base64,{logo_b64}" width="24" style="margin-right: 10px; vertical-align: middle;" />'
+            except Exception:
+                logo_img_tag = "🤖 "
+
+            # 1. Rate Limit (429) Error check
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                error_html = f"""
+                <div style="padding: 14px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; margin: 10px 0; color: #fcd34d;">
+                    {logo_img_tag}<strong>Nexus Notice:</strong> Google Gemini free-tier rate limit exceed ho gayi hai. Kripya thodi der baad try karein ya billing check karein.
+                </div>
+                """
+            # 2. Authentication / API Key Error check
+            elif "401" in error_msg or "UNAUTHENTICATED" in error_msg:
+                error_html = f"""
+                <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+                    {logo_img_tag}<strong>Nexus Security:</strong> API key invalid ya expire ho chuki hai. Kripya apni valid API key update karein.
+                </div>
+                """
+            # 3. Any other unexpected error
+            else:
+                error_html = f"""
+                <div style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+                    {logo_img_tag}<strong>Nexus Execution Failed:</strong> {error_msg}
+                </div>
+                """
+            
+            st.markdown(error_html, unsafe_allow_html=True)
