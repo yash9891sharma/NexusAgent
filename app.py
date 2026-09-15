@@ -21,6 +21,11 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+if "uploaded_files_list" not in st.session_state:
+    st.session_state.uploaded_files_list = []
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
@@ -116,9 +121,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.divider()
-# Uploaded files tracker initialization
-if "uploaded_files_list" not in st.session_state:
-    st.session_state.uploaded_files_list = []
+
 # --- CHAT HISTORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
