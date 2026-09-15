@@ -135,7 +135,7 @@ if prompt := st.chat_input("Type your question here (PDF or general knowledge)..
     with st.chat_message("user"):
         st.markdown(prompt)
 
- # 2. Assistant Message Generation with True Token Streaming
+# 2. Assistant Message Generation with True Token Streaming
 with st.chat_message("assistant"):
     inputs = {"question": prompt}
     trace_text = "Execution trace unavailable."
@@ -144,23 +144,30 @@ with st.chat_message("assistant"):
     status_placeholder = st.empty()
     
     try:
-        # Generator function jo LangGraph se direct live tokens stream karega
+        # Generator function jo LangGraph se direct live tokens stream karega safely
         def token_generator():
             final_gen = ""
-            # LangGraph ka native messages stream mode use kar rahe hain
             for msg, metadata in nexus_app.stream(inputs, stream_mode="messages"):
-                # Node execution ka status update dikhane ke liye
                 node_info = metadata.get("langgraph_node", "processing")
                 status_placeholder.text(f"⚡ Running node: {node_info}...")
                 
                 if msg.content:
-                    final_gen += msg.content
-                    yield msg.content
+                    # Handle both string and list content safely
+                    chunk_str = ""
+                    if isinstance(msg.content, list):
+                        for part in msg.content:
+                            if isinstance(part, dict) and "text" in part:
+                                chunk_str += part["text"]
+                            else:
+                                chunk_str += str(part)
+                    else:
+                        chunk_str = str(msg.content)
+                    
+                    final_gen += chunk_str
+                    yield chunk_str
             
             # Streaming khatam hote hi status placeholder hata dein
             status_placeholder.empty()
-            
-            # Storing final generated text in session state context later
             st.session_state.temp_final_response = final_gen
 
         # Streamlit ka built-in st.write_stream live generator ke sath
