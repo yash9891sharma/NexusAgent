@@ -192,13 +192,11 @@ with st.chat_message("assistant",avatar="logo.svg"):
             "trace": trace_text
         })
         # --- NEW: SUGGEST FOLLOW-UP QUESTIONS ---
-        # Callback function button click handle karne ke liye
         def set_followup(q):
             st.session_state.followup_clicked = q
 
         with st.spinner("Thinking of follow-up questions..."):
             try:
-                # Aapke "Building a Self-Correcting RAG Agent with LangGraph and Gemini" wale backend se LLM le rahe hain
                 from src.nodes import get_llm
                 followup_llm = get_llm()
                 
@@ -210,7 +208,6 @@ with st.chat_message("assistant",avatar="logo.svg"):
                 
                 if questions:
                     st.markdown("<br><span style='color:#94a3b8; font-size:14px;'>✨ Suggested Next Questions:</span>", unsafe_allow_html=True)
-                    # Create horizontal buttons for questions
                     cols = st.columns(len(questions))
                     for i, q in enumerate(questions):
                         with cols[i]:
@@ -221,8 +218,12 @@ with st.chat_message("assistant",avatar="logo.svg"):
                                 key=f"followup_{len(st.session_state.messages)}_{i}",
                                 use_container_width=True
                             )
-            except Exception:
-                pass # Agar kisi wajah se fail ho jaye, toh silently skip kar dega bina error ke
+                else:
+                    st.warning("⚠️ LLM ne koi question return nahi kiya.")
+                    
+            except Exception as e:
+                # Ab error chhupega nahi, seedha screen par dikhega
+                st.error(f"⚠️ Follow-up Error: {e}")
         
     except Exception as e:
         status_placeholder.empty()
