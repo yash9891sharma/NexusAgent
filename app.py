@@ -191,6 +191,7 @@ with st.chat_message("assistant",avatar="logo.svg"):
             "content": final_response,
             "trace": trace_text
         })
+        
         # --- NEW: SUGGEST FOLLOW-UP QUESTIONS ---
         def set_followup(q):
             st.session_state.followup_clicked = q
@@ -200,11 +201,19 @@ with st.chat_message("assistant",avatar="logo.svg"):
                 from src.nodes import get_llm
                 followup_llm = get_llm()
                 
-                # Fast API call to get 3 questions
                 f_prompt = f"Based on this AI answer, suggest exactly 3 short follow-up questions the user can ask next. Output ONLY the questions separated by a pipe symbol '|'. No numbers, no intro text. Answer: {final_response}"
                 
-                f_response = followup_llm.invoke(f_prompt).content
-                questions = [q.strip() for q in f_response.split('|') if q.strip() and len(q) > 5][:3]
+                response_obj = followup_llm.invoke(f_prompt)
+                
+                # Smart extraction: List aayi hai ya String?
+                questions = []
+                if isinstance(response_obj.content, list):
+                    # Agar list hai, toh usme se direct questions nikal lo
+                    questions = [str(q).strip() for q in response_obj.content if str(q).strip() and len(str(q)) > 5][:3]
+                else:
+                    # Agar string hai, toh split kar lo
+                    f_response = str(response_obj.content)
+                    questions = [q.strip() for q in f_response.split('|') if q.strip() and len(q) > 5][:3]
                 
                 if questions:
                     st.markdown("<br><span style='color:#94a3b8; font-size:14px;'>✨ Suggested Next Questions:</span>", unsafe_allow_html=True)
@@ -219,12 +228,11 @@ with st.chat_message("assistant",avatar="logo.svg"):
                                 use_container_width=True
                             )
                 else:
-                    st.warning("⚠️ LLM ne koi question return nahi kiya.")
+                    st.warning("⚠️ LLM ne koi valid question return nahi kiya.")
                     
             except Exception as e:
-                # Ab error chhupega nahi, seedha screen par dikhega
                 st.error(f"⚠️ Follow-up Error: {e}")
-        
+                
     except Exception as e:
         status_placeholder.empty()
         error_msg = str(e)
