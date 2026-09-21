@@ -199,40 +199,49 @@ with st.chat_message("assistant",avatar="logo.svg"):
         with st.spinner("Thinking of follow-up questions..."):
             try:
                 from src.nodes import get_llm
-                followup_llm = get_llm()
+                import ast
                 
+                followup_llm = get_llm()
                 f_prompt = f"Based on this AI answer, suggest exactly 3 short follow-up questions the user can ask next. Output ONLY the questions separated by a pipe symbol '|'. No numbers, no intro text. Answer: {final_response}"
                 
                 response_obj = followup_llm.invoke(f_prompt)
+                raw_content = response_obj.content
                 
-                # Smart extraction: List aayi hai ya String?
-                questions = []
-                if isinstance(response_obj.content, list):
-                    # Agar list hai, toh usme se direct questions nikal lo
-                    questions = [str(q).strip() for q in response_obj.content if str(q).strip() and len(str(q)) > 5][:3]
+                # 1. Smart Extraction: API ke kachre (signature/dictionary) mein se sirf text nikalna
+                text_content = ""
+                if isinstance(raw_content, dict):
+                    text_content = raw_content.get('text', str(raw_content))
+                elif isinstance(raw_content, str):
+                    if raw_content.strip().startswith("{"):
+                        try:
+                            # Agar stringified dictionary aayi hai toh use parse karo
+                            parsed = ast.literal_eval(raw_content)
+                            text_content = parsed.get('text', raw_content)
+                        except Exception:
+                            text_content = raw_content
+                    else:
+                        text_content = raw_content
                 else:
-                    # Agar string hai, toh split kar lo
-                    f_response = str(response_obj.content)
-                    questions = [q.strip() for q in f_response.split('|') if q.strip() and len(q) > 5][:3]
+                    text_content = str(raw_content)
+                    
+                # 2. Questions ko list mein split karna
+                questions = [q.strip() for q in text_content.split('|') if q.strip() and len(q) > 5][:3]
                 
+                # 3. ChatGPT/Gemini Style Line-by-Line Display
                 if questions:
                     st.markdown("<br><span style='color:#94a3b8; font-size:14px;'>✨ Suggested Next Questions:</span>", unsafe_allow_html=True)
-                    cols = st.columns(len(questions))
+                    # Yahan se columns hata diye hain taaki ek ke neeche ek aayein
                     for i, q in enumerate(questions):
-                        with cols[i]:
-                            st.button(
-                                q, 
-                                on_click=set_followup, 
-                                args=(q,), 
-                                key=f"followup_{len(st.session_state.messages)}_{i}",
-                                use_container_width=True
-                            )
-                else:
-                    st.warning("⚠️ LLM ne koi valid question return nahi kiya.")
-                    
+                        st.button(
+                            f"💬 {q}", # Ek chota sa icon add kiya hai premium feel ke liye
+                            on_click=set_followup, 
+                            args=(q,), 
+                            key=f"followup_{len(st.session_state.messages)}_{i}"
+                        )
+                        
             except Exception as e:
-                st.error(f"⚠️ Follow-up Error: {e}")
-                
+                pass # Production mein silent rakhne ke liye
+
     except Exception as e:
         status_placeholder.empty()
         error_msg = str(e)
