@@ -27,6 +27,10 @@ if "uploaded_files_list" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+    # Follow-up click tracker
+if "followup_clicked" not in st.session_state:
+    st.session_state.followup_clicked = None
+
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
     st.markdown("### 📂 Upload Documents")
@@ -134,12 +138,21 @@ for message in st.session_state.messages:
             with st.expander("🛠️ View AI Execution Trace"):
                 st.markdown(message["trace"])
 # --- CHAT INPUT & LIVE GENERATION ---
-if prompt := st.chat_input("Type your question here (PDF or general knowledge)..."):
-    
-    # 1. User Message Display & Save
-    st.session_state.messages.append({"role": "user", "content": prompt})
+user_input = st.chat_input("Type your question here (PDF or general knowledge)...")
+
+# Override input agar kisi follow-up button par click hua hai
+if st.session_state.get("followup_clicked"):
+    prompt = st.session_state.followup_clicked
+    st.session_state.followup_clicked = None
+else:
+    prompt = user_input
+
+if prompt:
+    # 1. Display User Message
     with st.chat_message("user"):
         st.markdown(prompt)
+    
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
 # 2. Assistant Message Generation with Clean Typewriter Stream
 with st.chat_message("assistant",avatar="logo.svg"):
@@ -178,6 +191,38 @@ with st.chat_message("assistant",avatar="logo.svg"):
             "content": final_response,
             "trace": trace_text
         })
+        # --- NEW: SUGGEST FOLLOW-UP QUESTIONS ---
+        # Callback function button click handle karne ke liye
+        def set_followup(q):
+            st.session_state.followup_clicked = q
+
+        with st.spinner("Thinking of follow-up questions..."):
+            try:
+                # Aapke "Building a Self-Correcting RAG Agent with LangGraph and Gemini" wale backend se LLM le rahe hain
+                from src.nodes import get_llm
+                followup_llm = get_llm()
+                
+                # Fast API call to get 3 questions
+                f_prompt = f"Based on this AI answer, suggest exactly 3 short follow-up questions the user can ask next. Output ONLY the questions separated by a pipe symbol '|'. No numbers, no intro text. Answer: {final_response}"
+                
+                f_response = followup_llm.invoke(f_prompt).content
+                questions = [q.strip() for q in f_response.split('|') if q.strip() and len(q) > 5][:3]
+                
+                if questions:
+                    st.markdown("<br><span style='color:#94a3b8; font-size:14px;'>✨ Suggested Next Questions:</span>", unsafe_allow_html=True)
+                    # Create horizontal buttons for questions
+                    cols = st.columns(len(questions))
+                    for i, q in enumerate(questions):
+                        with cols[i]:
+                            st.button(
+                                q, 
+                                on_click=set_followup, 
+                                args=(q,), 
+                                key=f"followup_{len(st.session_state.messages)}_{i}",
+                                use_container_width=True
+                            )
+            except Exception:
+                pass # Agar kisi wajah se fail ho jaye, toh silently skip kar dega bina error ke
         
     except Exception as e:
         status_placeholder.empty()
