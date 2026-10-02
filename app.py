@@ -30,7 +30,14 @@ if "messages" not in st.session_state:
     # Follow-up click tracker
 if "followup_clicked" not in st.session_state:
     st.session_state.followup_clicked = None
+import uuid
 
+# Graph ki memory ke liye thread ID
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = str(uuid.uuid4())
+
+# Yeh config hum apne graph ko pass karenge
+config = {"configurable": {"thread_id": st.session_state.thread_id}}
 # --- SIDEBAR & ARCHITECTURE ---
 with st.sidebar:
     st.markdown("### 📂 Upload Documents")
@@ -147,6 +154,35 @@ if st.session_state.get("followup_clicked"):
 else:
     prompt = user_input
 
+# --- NEW: HUMAN IN THE LOOP (HITL) CHECK ---
+# Check karein ki kya graph 'web_search' par ruka hua hai
+current_state = nexus_app.get_state(config)
+is_paused = current_state.next and "web_search" in current_state.next
+
+if is_paused:
+    with st.chat_message("assistant"):
+        st.warning("⚠️ Mujhe aapke documents mein iska sahi jawab nahi mila. Kya main internet par live search karun?")
+        col1, col2 = st.columns(2)
+        
+        if col1.button("🌐 Yes, Search Web"):
+            with st.spinner("Searching the web..."):
+                # None bhej kar graph ko wahi se aage resume karein
+                nexus_app.invoke(None, config)
+            st.rerun() # UI refresh karne ke liye
+            
+        if col2.button("🚫 No, Skip"):
+            with st.spinner("Generating from available data..."):
+                # Graph ko batao ki web_search node ko skip kar diya gaya hai
+                nexus_app.update_state(config, {}, as_node="web_search")
+                nexus_app.invoke(None, config)
+            st.rerun()
+
+# DHYAN DEIN: Yahan purane 'if prompt:' ko badal kar 'elif prompt:' kar diya hai
+elif prompt:
+    # 1. Display User Message
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
 if prompt:
     # 1. Display User Message
     with st.chat_message("user"):
@@ -164,15 +200,14 @@ with st.chat_message("assistant",avatar="logo.svg"):
     try:
         status_placeholder.text("⚡ Nexus Agent is processing your request...")
         
-        # Graph ko cleanly invoke karke final state nikalna (no multi-node duplication)
-        final_state = nexus_app.invoke(inputs)
+        # 1. Graph invoke karte waqt 'config' pass karna zaroori hai
+        final_state = nexus_app.invoke(inputs, config)
         
-        # Kaam khatam hote hi status hata dena
         status_placeholder.empty()
         
-        # Extract final values safely
-        if final_state:
-            final_response = final_state.get("generation", "Error: No response generated.")
+        # 2. Agar invoke hone ke turant baad graph ruka hua hai (HITL ke liye), toh page refresh karo
+        if nexus_app.get_state(config).next:
+            st.rerun()
             trace_text = final_state.get("trace", "Execution trace unavailable.")
         else:
             final_response = "Error: System returned an empty state."
