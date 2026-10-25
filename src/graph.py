@@ -31,7 +31,7 @@ workflow.add_conditional_edges(
     lambda state: state.get("route", "vectorstore"),
     {
         "vectorstore": "retrieve",
-        "direct": "generate"
+        "direct": "web_search"
     }
 )
 
