@@ -30,8 +30,9 @@ workflow.add_conditional_edges(
     "intelligent_router",
     lambda state: state.get("route", "vectorstore"),
     {
-        "vectorstore": "retrieve",
-        "direct": "web_search"
+        "vectorstore": "retrieve",         # PDF mein check karega
+        "websearch": "transform_query",    # Seedha Web Search par jayega!
+        "direct": "generate"
     }
 )
 
@@ -47,15 +48,4 @@ workflow.add_conditional_edges(
 workflow.add_edge("transform_query", "web_search")
 workflow.add_edge("web_search", "generate")
 workflow.add_edge("generate", END)
-
-# Upar imports mein MemorySaver add karein
-from langgraph.checkpoint.memory import MemorySaver
-
-# Graph memory initialize karein
-memory = MemorySaver()
-
-# Sirf ek baar compile karein, "web_search" node par interrupt lagakar
-nexus_app = workflow.compile(
-    checkpointer=memory,
-    interrupt_before=["web_search"]  # Aapke graph mein node ka naam "web_search" hai
-)
+nexus_app = workflow.compile()

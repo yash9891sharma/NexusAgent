@@ -153,53 +153,27 @@ if st.session_state.get("followup_clicked"):
     st.session_state.followup_clicked = None
 else:
     prompt = user_input
-# --- LOGIC FIX: User Input Handle Karein ---
+# --- AUTOMATIC CHAT EXECUTION ---
 if prompt:
-    # 1. IMMEDIATE RENDER: Question turant UI par paint karo
+    # 1. User ka question turant screen par dikhayein
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Check karein ki graph state pehle se 'paused' (ruka hua) toh nahi hai?
-    current_state = nexus_app.get_state(config)
-    is_paused = current_state.next and "web_search" in current_state.next
-
-    # Agar graph pehle kisi Yes/No state mein phasa tha ya process kar raha tha, 
-    # toh usko forcefully clear karein naye thread ke sath
-    if is_paused or st.session_state.get("is_processing"):
-        import uuid
-        st.session_state.thread_id = str(uuid.uuid4()) # Naya memory thread
-        config = {"configurable": {"thread_id": st.session_state.thread_id}}
-
-    # Set karo ki ab naya process shuru ho gaya hai
-    st.session_state["is_processing"] = True
-
-    # 3. ASSISTANT GENERATION
+    # 2. Assistant ka response generate karein (Bina kisi Yes/No button ke)
     with st.chat_message("assistant", avatar="logo.svg"):
         status_placeholder = st.empty()
         
         try:
-            status_placeholder.text("⚡ Nexus Agent is processing your request...")
+            status_placeholder.text("⚡ Nexus Agent is thinking...")
             
-            # Graph run karo naye input aur clean config ke sath
             inputs = {"question": prompt}
-            final_state = nexus_app.invoke(inputs, config)
+            final_state = nexus_app.invoke(inputs)
             status_placeholder.empty()
             
-            # Agar output aane ke baad graph ruk gaya (Yes/No maangne ke liye)
-            if nexus_app.get_state(config).next:
-                st.session_state["is_processing"] = False # Pause aate hi processing flag band kardo
-                st.rerun() # Page reload karo taaki buttons aayein
-            
-            # Safety check: Kya answer generate hua?
-            if final_state and "generation" in final_state:
-                final_response = final_state["generation"]
-                trace_text = final_state.get("trace", "Trace not available.")
-            else:
-                final_response = "Error: System returned an empty state."
-                trace_text = str(final_state) if final_state else "Empty Output"
+            final_response = final_state.get("generation", "Error: Could not generate answer.")
+            trace_text = final_state.get("trace", "Autonomous execution completed.")
 
-            # 4. DIRECT OUTPUT RENDER: Seedha markdown use kar rahe hain
             st.markdown(final_response)
             
             with st.expander("🛠️ View AI Execution Trace"):
@@ -214,26 +188,3 @@ if prompt:
         except Exception as e:
             status_placeholder.empty()
             st.error(f"❌ System Error: {str(e)}")
-            
-        finally:
-            st.session_state["is_processing"] = False
-
-# --- HITL YES/NO BUTTONS ---
-# Agar naya prompt NAHI aaya hai, lekin purana task YES/NO ke liye ruka hua hai, tabhi buttons dikhayein
-elif nexus_app.get_state(config).next and "web_search" in nexus_app.get_state(config).next:
-    with st.chat_message("assistant", avatar="logo.svg"):
-        st.warning("⚠️ Mujhe aapke documents mein iska exact jawab nahi mila. Kya main internet par live search karun?")
-        col1, col2 = st.columns(2)
-        
-        if col1.button("🌐 Yes, Search Web"):
-            with st.spinner("Searching the web..."):
-                nexus_app.invoke(None, config)
-            st.rerun()
-            
-        if col2.button("🚫 No, Skip"):
-            with st.spinner("Generating from available data..."):
-                nexus_app.update_state(config, {}, as_node="web_search")
-                nexus_app.invoke(None, config)
-            st.rerun()
-                
-       

@@ -3,37 +3,38 @@ from langchain_core.output_parsers import StrOutputParser
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-
 def intelligent_router(state: GraphState):
     """
-    Sawaal ko analyze karta hai aur decide karta hai ki PDF search karni hai ya direct answer dena hai.
+    Automatic 3-Way Router:
+    - 'vectorstore': Uploaded PDF/documents ke liye
+    - 'websearch': Current events, live time, weather, latest news ke liye
+    - 'direct': General knowledge, coding, greetings ke liye
     """
     question = state["question"]
     
-    router_prompt = PromptTemplate(
-        template="""You are an expert router for an AI agent. 
-        Analyze the user question: '{question}'
-        
-        If the question requires looking into uploaded documents, manuals, or local PDFs, output 'vectorstore'.
-        If it is a general knowledge question, coding help, casual chat, or current events, output 'websearch' or 'direct'.
-        
-        Return ONLY one word: either 'vectorstore' or 'direct'. Do not add any extra text.""",
-        input_variables=["question"]
-    )
+    router_prompt = f"""You are an expert router for an AI RAG agent.
+Analyze the user's question: '{question}'
+
+Choose the best route from these 3 options:
+1. 'websearch' -> If the question asks about current time, date, live events, latest news, weather, real-time facts, or recent information.
+2. 'vectorstore' -> If the question is about specific uploaded documents, PDFs, reports, project files, or "Nexus Agent" architecture.
+3. 'direct' -> If the question is general knowledge (e.g., historical facts, science definitions), coding help, math, or casual greetings.
+
+Return ONLY one single word: 'websearch', 'vectorstore', or 'direct'."""
     
     try:
         llm = get_llm()
-        chain = router_prompt | llm | StrOutputParser()
-        route = chain.invoke({"question": question}).strip().lower()
+        route = llm.invoke(router_prompt).content.strip().lower()
+        print(f"--- [SMART ROUTER]: Route chosen -> {route} ---")
         
-        print(f"--- [ROUTER DECISION]: Route chosen -> {route} ---")
-        
-        if "vectorstore" in route:
-            return {"route": "vectorstore"}
-        else:
+        if "websearch" in route or "web" in route:
+            return {"route": "websearch"}
+        elif "direct" in route:
             return {"route": "direct"}
+        else:
+            return {"route": "vectorstore"}
     except Exception as e:
-        print(f"--- [ROUTER ERROR]: {e}, defaulting to vectorstore ---")
+        print(f"--- [ROUTER ERROR]: {e} ---")
         return {"route": "vectorstore"}
 from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
