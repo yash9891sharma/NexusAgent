@@ -177,56 +177,64 @@ if is_paused:
                 nexus_app.invoke(None, config)
             st.rerun()
 
-# DHYAN DEIN: Yahan purane 'if prompt:' ko badal kar 'elif prompt:' kar diya hai
-elif prompt:
-    # 1. Display User Message
-    with st.chat_message("user"):
-        st.markdown(prompt)
+        elif prompt:
+    # --- GHOST EXECUTION GUARDRAIL ---
+    # Agar app ko lag raha hai pehle se process chal raha hai, toh naya prompt lene se pehle use clean karo.
+            if st.session_state.get("is_processing"):
+             st.warning("⚠️ Purana execution interrupted. Nayi request shuru ho rahi hai...")
+         
+    st.session_state["is_processing"] = True # Mark karo ki naya kaam shuru ho gaya hai
 
-if prompt:
     # 1. Display User Message
     with st.chat_message("user"):
         st.markdown(prompt)
     
     st.session_state.messages.append({"role": "user", "content": prompt})
-
-# 2. Assistant Message Generation with Clean Typewriter Stream
-with st.chat_message("assistant",avatar="logo.svg"):
-    inputs = {"question": prompt}
     
-    # Ek temporary placeholder live status ke liye
-    status_placeholder = st.empty()
-    
-    try:
-        status_placeholder.text("⚡ Nexus Agent is processing your request...")
+    # 2. Assistant Message Generation with Clean Typewriter Stream
+    with st.chat_message("assistant", avatar="logo.svg"):
+        inputs = {"question": prompt}
+        status_placeholder = st.empty()
         
-        # 1. Graph invoke karte waqt 'config' pass karna zaroori hai
-        final_state = nexus_app.invoke(inputs, config)
-        
-        status_placeholder.empty()
-        
-        # 2. Agar invoke hone ke turant baad graph ruka hua hai (HITL ke liye), toh page refresh karo
-        if nexus_app.get_state(config).next:
-            st.rerun()
-            trace_text = final_state.get("trace", "Execution trace unavailable.")
-        else:
-            final_response = "Error: System returned an empty state."
-            trace_text = ""
-        
-        # Smooth Typewriter Effect generator (jo pehle bilkul sahi chalta tha)
-        st.write_stream(stream_text(final_response))
-        
-        # Hide execution trace in an expander
-        with st.expander("🛠️ View AI Execution Trace"):
-            st.markdown(trace_text)
+        try:
+            status_placeholder.text("⚡ Nexus Agent is processing your request...")
             
-        # 3. Save Assistant Message to History
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": final_response,
-            "trace": trace_text
-        })
-        
+            # 1. Graph invoke karte waqt 'config' pass karna zaroori hai
+            final_state = nexus_app.invoke(inputs, config)
+            
+            status_placeholder.empty()
+            
+            # 2. HITL Check & Execution
+            if nexus_app.get_state(config).next:
+                st.session_state["is_processing"] = False # Pause pe aate hi mark ko hata do
+                st.rerun()
+            
+            trace_text = final_state.get("trace", "Execution trace unavailable.")
+            final_response = final_state.get("generation", "Error: System returned an empty state.")
+            
+            # Smooth Typewriter Effect generator
+            st.write_stream(stream_text(final_response))
+            
+            # Hide execution trace in an expander
+            with st.expander("🛠️ View AI Execution Trace"):
+                st.markdown(trace_text)
+                
+            # 3. Save Assistant Message to History
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": final_response,
+                "trace": trace_text
+            })
+            
+        except Exception as e:
+             status_placeholder.empty()
+             st.error(f"❌ Execution Error: {str(e)}")
+             
+        finally:
+            # --- CRITICAL FIX ---
+            # Graph run hone ke baad (ya error aane par) is_processing hamesha False ho jana chahiye.
+            st.session_state["is_processing"] = False
+    
         # --- NEW: SUGGEST FOLLOW-UP QUESTIONS ---
         def set_followup(q):
             st.session_state.followup_clicked = q
@@ -277,8 +285,8 @@ with st.chat_message("assistant",avatar="logo.svg"):
             except Exception as e:
                 pass # Production mein silent rakhne ke liye
 
-    except Exception as e:
-        status_placeholder.empty()
+            except Exception as e:
+             status_placeholder.empty()
         error_msg = str(e)
         
         # Custom branded Nexus error card
