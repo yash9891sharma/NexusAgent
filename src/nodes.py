@@ -1,3 +1,4 @@
+from httpx2 import query
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -143,9 +144,14 @@ def fallback_search(state: GraphState):
                 web_doc = [Document(page_content=f"Live Web Context:\n{web_context}")]
         except Exception as e:
             print(f"--- [WARNING] Tavily search error: {e} ---")
-    docs = state.get("documents", [])
-    docs.extend(web_doc)
-    return {"documents": docs, "question": query}
+    docs = state.get("documents")
+if docs is None:
+    docs = []
+def generate(state: GraphState):
+# Agar web_doc mein kuch aaya hai, toh usko purane docs ke sath jod do
+docs = list(docs) + web_doc
+
+return {"documents": docs, "question": query, "trace": "🌐 Web search executed and context retrieved."}
 
 def generate(state: GraphState):
     current_retry = state.get("retry_count", 0) + 1
