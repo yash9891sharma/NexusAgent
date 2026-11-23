@@ -25,7 +25,7 @@ def get_llm():
     
     # Yahan gemini-1.5-flash-latest lagaya hai taaki 404 error na aaye
     return ChatGoogleGenerativeAI(
-        model="gemini-3.8-flash",
+        model="gemini-2.5-flash",
         temperature=0.2,
         api_key=api_key
     )
