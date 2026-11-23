@@ -23,9 +23,9 @@ def get_llm():
     if not api_key:
         raise ValueError("GOOGLE_API_KEY is missing! Check .env file.")
     
-    # Yahan gemini-1.5-flash-latest lagaya hai taaki 404 error na aaye
+
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-3.8-flash",
         temperature=0.2,
         api_key=api_key
     )
@@ -79,7 +79,8 @@ Return ONLY one single word: 'websearch', 'vectorstore', or 'direct'."""
     
     try:
         llm = get_llm()
-        route = llm.invoke(router_prompt).content.strip().lower()
+        raw_content = llm.invoke(router_prompt).content
+        route = (raw_content[0].get("text", "") if isinstance(raw_content, list) else str(raw_content)).strip().lower()
         print(f"--- [SMART ROUTER]: Route chosen -> {route} ---")
         
         if "websearch" in route or "web" in route:
@@ -117,7 +118,8 @@ def transform_query(state: GraphState):
         response = llm.invoke(f"Convert this question into a concise 3-4 word keyword search query for Google: {question}. Output ONLY keywords")
         
         if response and response.content:
-            better_query = str(response.content).strip().replace('"', '')
+            raw_q = response.content[0].get("text", "") if isinstance(response.content, list) else str(response.content)
+            better_query = raw_q.strip().replace('"', '')
         else:
             better_query = question
     except Exception:

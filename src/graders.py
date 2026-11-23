@@ -28,7 +28,7 @@ def grade_doc_relevance(document_text: str, question: str) -> bool:
              raise ValueError("API Key is missing!")
              
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             temperature=0,
             api_key=api_key
         )
