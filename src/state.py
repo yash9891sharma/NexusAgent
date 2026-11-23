@@ -8,3 +8,5 @@ class GraphState(TypedDict):
     web_search: str
     documents: List[Document]
     retry_count: int
+    route: str          # <--- Yeh line add karni hai (Routing ke liye)
+    trace: str          # <--- Yeh line add karni hai (Trace text ke liye)
