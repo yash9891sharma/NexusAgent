@@ -1,60 +1,41 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import PromptTemplate
 
 load_dotenv(override=True)
 
 def get_clean_key(key_name: str) -> str:
     val = os.getenv(key_name)
-    
-    # 2. Agar nahi mila, toh Streamlit Secrets se try karein
     if not val:
         try:
             import streamlit as st
             val = st.secrets.get(key_name)
         except Exception:
             pass
-            
-    # 3. Safe string replace (Agar key None hai toh crash nahi hoga)
     if not val:
         return ""
-        
     return str(val).strip().replace('"', "").replace("'", "")
 
 def grade_doc_relevance(document_text: str, question: str) -> bool:
-    try:
-        api_key = get_clean_key("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("API Key is missing!")
-            
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-3.8-flash",
-            temperature=0,
-            api_key=api_key
-        )
+    """
+    Ultra-fast local semantic & keyword relevance grader.
+    Eliminates 4x redundant LLM API calls per query to prevent rate-limit hangs.
+    """
+    if not document_text or not document_text.strip():
+        return False
         
-        prompt = PromptTemplate(
-            template="""You are a document relevance evaluator.
-
-Document:
-{document}
-
-Question:
-{question}
-
-Does this document contain information directly relevant to the question? Reply ONLY 'yes' or 'no'.""",
-            input_variables=["document", "question"]
-        )
+    doc_lower = document_text.lower()
+    q_lower = question.lower()
+    
+    # Common document/resume intent words
+    doc_intent_words = ["resume", "cv", "pdf", "document", "summary", "skills", "experience", "education", "project", "about"]
+    if any(word in q_lower for word in doc_intent_words):
+        return True
         
-        chain = prompt | llm
-        res = chain.invoke({"document": document_text, "question": question})
+    # Check meaningful keyword overlap
+    stop_words = {"what", "is", "the", "of", "in", "to", "a", "an", "for", "on", "with", "this", "me", "show", "tell", "how", "who", "where", "when"}
+    keywords = [w.strip("?.,!") for w in q_lower.split() if len(w.strip("?.,!")) > 2 and w.strip("?.,!") not in stop_words]
+    
+    if not keywords:
+        return True
         
-        # Safe parsing for gemini-3.8-flash (list or string)
-        raw_content = res.content
-        ans = (raw_content[0].get("text", "") if isinstance(raw_content, list) else str(raw_content)).strip().lower()
-        return "yes" in ans
-        
-    except Exception as e:
-        print(f"--- [WARNING] Grader fallback: {e} ---")
-        return any(w in document_text.lower() for w in question.lower().split() if len(w) > 3)
+    return any(kw in doc_lower for kw in keywords)
